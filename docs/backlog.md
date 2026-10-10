@@ -123,3 +123,4 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | 6. Demo e Diferenciais | 6 | 15 | Sprint 3 |
 | 7. Apresentação | 15 | 37 | Sprint 3–4 |
 | **Total** | **49** | **120** | |
+#mexi no codigo
