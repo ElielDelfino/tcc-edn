@@ -21,7 +21,8 @@ Diagrama estático: [docs/arquitetura.svg](docs/arquitetura.svg)
 │   └── modules/
 │       ├── lambda/              # Função, role de execução e log group
 │       ├── api-gateway/         # REST API GET/POST /count, CORS e throttling
-│       └── dynamodb/            # ⚠️ em branco — guia de implementação no README (M4)
+│       ├── dynamodb/            # ⚠️ em branco — guia de implementação no README (M4)
+│       └── observability/       # ⚠️ em branco — dashboard, alarme e access logs (guia para o M6)
 ├── backend/
 │   └── contador/handler.py      # Código da Lambda (empacotado pelo Terraform)
 ├── frontend/
@@ -54,6 +55,7 @@ Em **Settings → Secrets and variables → Actions**, use os outputs do bootstr
 | Secret | `AWS_ROLE_ARN` | `project_role_arn` |
 | Variable | `TF_STATE_BUCKET` | `s3_bucket_name` |
 | Variable | `AWS_REGION` | `s3_bucket_region` |
+| Secret (opcional) | `ALARM_EMAIL` | E-mail que recebe os alarmes do CloudWatch (vazio = sem notificação) |
 
 Em **Settings → Environments**, crie o environment **`dev`** e configure:
 

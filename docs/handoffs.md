@@ -5,6 +5,73 @@ pendente e quem é impactado. Entradas mais recentes no topo.
 
 ---
 
+## 2026-10-23 — Troca de integrante no papel M6 + preparação da observabilidade
+
+**Responsável:** Eliel Delfino (M2)
+**Para:** novo integrante no papel **M6** (Demonstração e Diferenciais)
+
+### Contexto
+
+O integrante anterior do M6 saiu do grupo e do curso. Um novo integrante assume o papel com o
+mesmo identificador (M6). Para que ele comece sem depender de mudanças em outras áreas, a parte
+de CloudWatch foi organizada como a do M4: **módulo em branco + guia + ganchos prontos**.
+
+### O que foi preparado
+
+| Item | Situação |
+|---|---|
+| `infra/modules/observability/` | `.tf` **em branco** + [README-guia](../infra/modules/observability/README.md) (dashboard, alarme com SNS e access logs) |
+| `infra/main.tf` | `module "observability"` já chamado (vazio) e placeholder `apigw_access_log_group_arn` com `TODO(M6)` |
+| `modules/api-gateway` | Access logs no stage ativados automaticamente quando recebe o ARN; formato **sem IP nem user agent**; novo output `rest_api_name` |
+| `infra/variables.tf` + workflow | Variável `alarm_email` (`sensitive`), alimentada pelo secret opcional `ALARM_EMAIL` |
+| `boot-strap/policy_project.tf` | Permissões para dashboard, alarme, SNS, log group `/aws/apigateway/contador-acessos-*`, `/account` do API Gateway, `AttachRolePolicy` limitado à policy `AmazonAPIGatewayPushToCloudWatchLogs` e `PassRole` para o API Gateway; tudo restrito ao prefixo `contador-acessos-*` |
+
+**Validado (sem AWS):**
+
+- `fmt` e `validate` nos dois diretórios;
+- plan offline do estado atual: continua com **18 recursos**, stage sem access logs;
+- plan offline com uma implementação mínima seguindo o guia: **26 recursos** (25 sem e-mail),
+  stage com `access_log_settings`, sem ciclo de dependência, e-mail só como `(sensitive value)`;
+- policy inline da role com ~3,3 mil caracteres (limite do IAM: 10.240).
+
+**Não validado:** apply real (o bootstrap ainda não foi aplicado na AWS).
+
+### Impacto em custo
+
+A estimativa em [arquitetura.md](arquitetura.md#estimativa-de-custos-região-us-east-1) foi
+revisada para incluir a observabilidade e corrigir o preço do DynamoDB on-demand (agora
+US$ 0,625 por milhão de gravações, a metade do valor antigo).
+
+- **Fixo:** dashboard (US$ 3,00/mês) + alarme (US$ 0,10/mês) ≈ **US$ 3,10/mês**, ou **US$ 0** se
+  a conta estiver dentro das cotas gratuitas (3 dashboards e 10 alarmes).
+- **Variável:** access logs somam ~0,25 KB por acesso; logs dentro da cota de 5 GB/mês até ~8
+  milhões de acessos.
+- **Total a 1 milhão de acessos/mês:** ~US$ 4,13 com as cotas gratuitas, ~US$ 7,76 sem elas.
+- **M5:** usar esses números como base da task 5.3 (Pricing Calculator) e do slide 12. O
+  dashboard é o maior custo fixo, e vale mencionar na banca.
+
+### Tasks do novo M6
+
+| Task | Situação |
+|---|---|
+| 6.2 CloudWatch Logs da Lambda | **Concluída** (M2, no módulo `lambda`) |
+| 6.3 Dashboard | A fazer, pelo guia do módulo `observability` |
+| 6.4 Alarme (com SNS) | A fazer, pelo guia do módulo `observability` |
+| 6.8 Access logs do API Gateway (nova) | A fazer, pelo guia do módulo `observability` |
+| 6.1 Demo funcional | A fazer. A página `frontend/` já tem POST/GET, log e teste de concorrência |
+| 6.5 Estratégia de recuperação | A fazer (com o M4) |
+| 6.6 Melhorias futuras | A fazer |
+| Slides 13–16 (7.10–7.12) | A fazer |
+
+### Pendências
+
+- [ ] **Reaplicar o `boot-strap`** com as novas permissões (ou aplicá-lo pela primeira vez, que é a situação atual)
+- [ ] Criar o secret `ALARM_EMAIL` no GitHub (opcional)
+- [ ] Novo M6: implementar o módulo seguindo o guia
+- [ ] Atualizar o board (Notion/Jira) com a troca de integrante e a task 6.8
+
+---
+
 ## 2026-10-23 — Página de demonstração (frontend)
 
 **Responsável:** Eliel Delfino (M2)
