@@ -37,6 +37,12 @@ locals {
   # Guia completo em modules/dynamodb/README.md.
   dynamodb_table_name = ""
   dynamodb_table_arn  = ""
+
+  # TODO(M6): substituir pelo output do módulo quando os access logs existirem:
+  #   apigw_access_log_group_arn = module.observability.access_log_group_arn
+  # Enquanto vazio, o stage da API fica sem access logs.
+  # Guia completo em modules/observability/README.md.
+  apigw_access_log_group_arn = ""
 }
 
 # -------------------------------------------------------
@@ -75,4 +81,13 @@ module "api_gateway" {
   allowed_origin       = var.allowed_origin
   throttle_rate_limit  = var.throttle_rate_limit
   throttle_burst_limit = var.throttle_burst_limit
+  access_log_group_arn = local.apigw_access_log_group_arn
+}
+
+# -------------------------------------------------------
+# Observabilidade (dashboard, alarme, access logs) — responsabilidade do M6
+# (módulo ainda vazio)
+# -------------------------------------------------------
+module "observability" {
+  source = "./modules/observability"
 }

@@ -35,3 +35,9 @@ variable "throttle_burst_limit" {
   description = "Pico momentâneo de requisições"
   default     = 100
 }
+
+variable "access_log_group_arn" {
+  type        = string
+  description = "ARN do log group dos access logs (output do módulo observability). Vazio = access logs desligados"
+  default     = ""
+}
