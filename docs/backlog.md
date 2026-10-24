@@ -19,16 +19,16 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 
 ---
 
-## EPIC 2: Arquitetura e Infraestrutura (CDK)
+## EPIC 2: Arquitetura e Infraestrutura (Terraform)
 **Owner:** Membro 2 (Arquitetura)
 
 | ID | User Story | SP | Prioridade | Responsável | Sprint |
 |----|-----------|-----|-----------|-------------|--------|
 | 2.1 | Criar diagrama de arquitetura (fluxo de acesso + dados + segurança) | 3 | Alta | M2 | 1 |
-| 2.2 | Inicializar projeto CDK (Python ou TypeScript) | 2 | Alta | M2 | 1 |
-| 2.3 | Criar stack principal com todos os recursos (API GW + Lambda + DynamoDB) | 5 | Alta | M2 + M3 + M4 | 2 |
-| 2.4 | Configurar outputs do CDK (URL do API Gateway, nome da tabela) | 1 | Média | M2 | 2 |
-| 2.5 | Documentar como fazer deploy (`cdk deploy`, pré-requisitos) | 2 | Média | M2 | 2 |
+| 2.2 | Inicializar projeto Terraform (provider AWS, versões, estrutura de diretórios) | 2 | Alta | M2 | 1 |
+| 2.3 | Criar configuração Terraform principal com todos os recursos (API GW + Lambda + DynamoDB) | 5 | Alta | M2 + M3 + M4 | 2 |
+| 2.4 | Configurar outputs do Terraform (URL do API Gateway, nome da tabela) | 1 | Média | M2 | 2 |
+| 2.5 | Documentar como fazer deploy (`terraform init/plan/apply`, pré-requisitos) | 2 | Média | M2 | 2 |
 | 2.6 | Configurar .gitignore e organização do repositório | 1 | Alta | M2 | 1 |
 
 ---
@@ -83,8 +83,9 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | 6.2 | Configurar CloudWatch Logs para a Lambda | 2 | Média | M6 | 3 |
 | 6.3 | Criar CloudWatch Dashboard (métricas: invocations, errors, duration, DynamoDB read/write) | 3 | Média | M6 | 3 |
 | 6.4 | Configurar CloudWatch Alarm (ex: erros > 5 em 5 min) | 2 | Baixa | M6 | 3 |
-| 6.5 | Documentar estratégia de recuperação (re-deploy via CDK, restore DynamoDB) | 3 | Média | M6 + M4 | 3 |
-| 6.6 | Propor melhorias futuras (CI/CD, página front-end, analytics, rate limiting) | 2 | Média | M6 | 3 |
+| 6.5 | Documentar estratégia de recuperação (re-aplicação via Terraform, restore DynamoDB) | 3 | Média | M6 + M4 | 3 |
+| 6.6 | Propor melhorias futuras (hospedar a página na AWS com S3 + CloudFront, analytics, rate limiting) | 2 | Média | M6 | 3 |
+| 6.7 | Criar página de demonstração (`frontend/`) consumindo a API: POST ao abrir, GET, log e teste de concorrência | 2 | Média | M2 | 3 |
 
 ---
 
@@ -116,11 +117,11 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | Epic | Qtd de Itens | Total SP | Sprint Principal |
 |------|-------------|----------|-----------------|
 | 1. Planejamento e Requisitos | 5 | 10 | Sprint 1 |
-| 2. Arquitetura e CDK | 6 | 14 | Sprint 1–2 |
+| 2. Arquitetura e Terraform | 6 | 14 | Sprint 1–2 |
 | 3. Backend (Lambda + API GW) | 6 | 15 | Sprint 2–3 |
 | 4. Dados e Segurança | 6 | 13 | Sprint 2–3 |
 | 5. Escalabilidade e Custos | 5 | 16 | Sprint 2–3 |
-| 6. Demo e Diferenciais | 6 | 15 | Sprint 3 |
+| 6. Demo e Diferenciais | 7 | 17 | Sprint 3 |
 | 7. Apresentação | 15 | 37 | Sprint 3–4 |
-| **Total** | **49** | **120** | |
+| **Total** | **50** | **122** | |
 #mexi no codigo

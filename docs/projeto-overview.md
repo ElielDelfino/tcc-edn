@@ -21,7 +21,7 @@
 
 - **IAM:** Lambda precisa de permissão `PutItem`/`UpdateItem` na tabela DynamoDB. Por padrão, nada conversa com nada na AWS.
 - **DynamoDB:** Necessita Partition Key. Para contador simples, usar chave fixa como `"id": "hits"`.
-- **CDK:** Usar Python ou TypeScript (o que for mais confortável para o grupo).
+- **IaC:** Terraform. O case sugere AWS CDK (Python ou TypeScript), mas o instrutor autorizou a troca para Terraform, escolhido pela familiaridade do grupo com a ferramenta e pela organização do código.
 
 ## Pilares de Avaliação (10)
 

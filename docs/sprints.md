@@ -27,14 +27,14 @@
 | 1.4 | Mapeamento requisito ↔ serviço AWS | M1 + M5 | To Do |
 | 1.5 | Definir Definition of Done | M1 + M5 | To Do |
 | 2.1 | Criar diagrama de arquitetura | M2 | To Do |
-| 2.2 | Inicializar projeto CDK | M2 | To Do |
+| 2.2 | Inicializar projeto Terraform | M2 | To Do |
 | 2.6 | Configurar .gitignore e repo | M2 | To Do |
 
 ### Critérios de Aceitação da Sprint
 - [ ] Documento de requisitos revisado por todos
 - [ ] Diagrama de arquitetura aprovado pelo grupo
-- [ ] Projeto CDK inicializado e rodando `cdk synth` sem erros
-- [ ] Todos os membros com ambiente configurado (AWS CLI, CDK, credenciais)
+- [ ] Projeto Terraform inicializado (`terraform init` e `terraform validate` sem erros)
+- [ ] Todos os membros com ambiente configurado (AWS CLI, Terraform, credenciais)
 
 ---
 
@@ -46,8 +46,8 @@
 
 | ID | Tarefa | Responsável | Status |
 |----|--------|-------------|--------|
-| 2.3 | Stack CDK principal (todos os recursos) | M2 + M3 + M4 | To Do |
-| 2.4 | Configurar outputs do CDK | M2 | To Do |
+| 2.3 | Configuração Terraform principal (todos os recursos) | M2 + M3 + M4 | To Do |
+| 2.4 | Configurar outputs do Terraform | M2 | To Do |
 | 2.5 | Documentar processo de deploy | M2 | To Do |
 | 3.1 | Implementar função Lambda | M3 | To Do |
 | 3.2 | Configurar API Gateway | M3 + M2 | To Do |
@@ -61,7 +61,7 @@
 | 5.1 | Documentar escalabilidade de cada serviço | M5 | To Do |
 
 ### Critérios de Aceitação da Sprint
-- [ ] `cdk deploy` executa sem erros
+- [ ] `terraform apply` executa sem erros
 - [ ] Requisição POST à API incrementa o contador
 - [ ] Requisição GET à API retorna o total de acessos
 - [ ] IAM Role com permissões mínimas (não usa `*`)

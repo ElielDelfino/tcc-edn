@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------- Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------- Terraform
+# Providers e módulos baixados pelo `terraform init`.
+.terraform/
+# State local: contém IDs, ARNs e possivelmente valores sensíveis.
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+# Valores reais das variáveis (por ambiente/pessoa); versionar só o exemplo.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+# Overrides locais.
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Planos salvos com `terraform plan -out` (a pipeline usa `-out=tfplan`, sem extensão).
+*.tfplan
+tfplan
+# Pacote zip da Lambda gerado no plan/apply (archive_file em infra/.build/).
+.build/
+*.zip
+# Observação: .terraform.lock.hcl DEVE ser versionado (fixa as versões dos providers).
+
+# ---------------------------------------------------------------- Credenciais
+# Nunca versionar credenciais AWS ou variáveis de ambiente locais.
+.env
+.env.*
+!.env.example
+*.pem
+.aws/
+credentials
+
+# ---------------------------------------------------------------- Editores / SO
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# ---------------------------------------------------------------- Pessoal
+# Configurações locais do Claude Code e anotações fora de docs/.
+CLAUDE.local.md
+.claude/
+escalabilidade.md

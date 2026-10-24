@@ -1,0 +1,12 @@
+# Copie para terraform.tfvars (não versionado) e ajuste os valores.
+#   cp terraform.tfvars.example terraform.tfvars
+
+aws_region     = "us-east-1"
+project_name   = "GithubActionsContadorAcessos" # nome da role IAM
+github_owner   = "ElielDelfino"
+github_repo    = "tcc-edn"
+s3_bucket_name = "contador-acessos-tfstate-<sufixo-unico>" # nome globalmente único
+
+# github_environment   = "dev"
+# create_oidc_provider = false   # se a conta já tiver o OIDC provider do GitHub
+# resource_prefix      = "contador-acessos"

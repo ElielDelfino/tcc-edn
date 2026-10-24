@@ -5,8 +5,8 @@ Uma tarefa só é considerada **Done** quando atender todos os critérios abaixo
 ## Tarefas de Código/Infraestrutura
 
 - [ ] Código funciona localmente ou na AWS
-- [ ] `cdk synth` passa sem erros (se alterou CDK)
-- [ ] `cdk deploy` executa com sucesso (se alterou infraestrutura)
+- [ ] `terraform fmt -check` e `terraform validate` passam sem erros (se alterou Terraform)
+- [ ] `terraform plan` revisado e `terraform apply` executa com sucesso (se alterou infraestrutura)
 - [ ] Testado manualmente (requisição real à API)
 - [ ] Sem credenciais ou segredos no código
 - [ ] Commit feito com mensagem descritiva

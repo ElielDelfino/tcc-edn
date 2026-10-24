@@ -1,0 +1,21 @@
+# -------------------------------------------------------
+# Ambiente: dev
+# Copie para env/dev.tfvars (não versionado — coberto pelo .gitignore via *.tfvars)
+# Uso local: terraform plan -var-file=env/dev.tfvars
+# Todas as variáveis têm default em variables.tf; descomente só o que quiser mudar.
+# A pipeline usa os defaults (não lê este arquivo).
+# -------------------------------------------------------
+
+# aws_region  = "us-east-1"
+# project_name = "contador-acessos"
+# environment  = "dev"
+
+# --- API Gateway ---
+# allowed_origin       = "*"
+# throttle_rate_limit  = 50
+# throttle_burst_limit = 100
+
+# --- Lambda ---
+# log_retention_days = 14
+# lambda_memory_mb   = 128
+# lambda_timeout_s   = 5
