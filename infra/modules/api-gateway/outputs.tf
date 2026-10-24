@@ -3,6 +3,11 @@ output "rest_api_id" {
   description = "ID da REST API"
 }
 
+output "rest_api_name" {
+  value       = aws_api_gateway_rest_api.this.name
+  description = "Nome da REST API — dimensão ApiName das métricas do CloudWatch"
+}
+
 output "invoke_url" {
   value       = aws_api_gateway_stage.this.invoke_url
   description = "URL base do stage"

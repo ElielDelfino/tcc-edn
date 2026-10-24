@@ -128,6 +128,26 @@ resource "aws_api_gateway_stage" "this" {
   rest_api_id   = aws_api_gateway_rest_api.this.id
   deployment_id = aws_api_gateway_deployment.this.id
   stage_name    = var.stage_name
+
+  # Access logs: ativados só quando o módulo observability (M6) fornece o log group.
+  # Formato sem IP nem user agent do visitante (RNF-09: sem dados pessoais).
+  dynamic "access_log_settings" {
+    for_each = var.access_log_group_arn != "" ? [var.access_log_group_arn] : []
+
+    content {
+      destination_arn = access_log_settings.value
+      format = jsonencode({
+        requestId          = "$context.requestId"
+        requestTime        = "$context.requestTime"
+        httpMethod         = "$context.httpMethod"
+        resourcePath       = "$context.resourcePath"
+        status             = "$context.status"
+        responseLatency    = "$context.responseLatency"
+        integrationLatency = "$context.integrationLatency"
+        integrationStatus  = "$context.integrationStatus"
+      })
+    }
+  }
 }
 
 # Teto de requisições do stage: o endpoint é público e sem autenticação,

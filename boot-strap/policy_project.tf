@@ -47,6 +47,8 @@ resource "aws_iam_role_policy" "terraform_state_and_infra" {
           "arn:aws:apigateway:${var.aws_region}::/restapis",
           "arn:aws:apigateway:${var.aws_region}::/restapis/*",
           "arn:aws:apigateway:${var.aws_region}::/tags/*",
+          # Configuração da conta: role que o API Gateway usa para gravar access logs.
+          "arn:aws:apigateway:${var.aws_region}::/account",
         ]
       },
       {
@@ -64,7 +66,46 @@ resource "aws_iam_role_policy" "terraform_state_and_infra" {
         Resource = [
           "arn:aws:logs:${var.aws_region}:${local.account_id}:log-group:/aws/lambda/${local.prefix}-*",
           "arn:aws:logs:${var.aws_region}:${local.account_id}:log-group:/aws/lambda/${local.prefix}-*:*",
+          # Access logs do API Gateway (módulo observability).
+          "arn:aws:logs:${var.aws_region}:${local.account_id}:log-group:/aws/apigateway/${local.prefix}-*",
+          "arn:aws:logs:${var.aws_region}:${local.account_id}:log-group:/aws/apigateway/${local.prefix}-*:*",
         ]
+      },
+      {
+        Sid    = "CloudWatchProjectDashboards"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutDashboard",
+          "cloudwatch:GetDashboard",
+          "cloudwatch:DeleteDashboards",
+        ]
+        Resource = "arn:aws:cloudwatch::${local.account_id}:dashboard/${local.prefix}-*"
+      },
+      {
+        Sid    = "CloudWatchProjectAlarms"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:TagResource",
+          "cloudwatch:UntagResource",
+          "cloudwatch:ListTagsForResource",
+        ]
+        Resource = "arn:aws:cloudwatch:${var.aws_region}:${local.account_id}:alarm:${local.prefix}-*"
+      },
+      {
+        # Ações só de leitura que não aceitam restrição por recurso.
+        Sid      = "CloudWatchDescribe"
+        Effect   = "Allow"
+        Action   = ["cloudwatch:DescribeAlarms", "cloudwatch:ListDashboards"]
+        Resource = "*"
+      },
+      {
+        # Tópico de notificação dos alarmes e suas assinaturas (ARN = tópico + ":<id>").
+        Sid      = "SNSProjectTopics"
+        Effect   = "Allow"
+        Action   = ["sns:*"]
+        Resource = "arn:aws:sns:${var.aws_region}:${local.account_id}:${local.prefix}-*"
       },
       {
         # DescribeLogGroups não suporta restrição por recurso.
@@ -95,14 +136,26 @@ resource "aws_iam_role_policy" "terraform_state_and_infra" {
         Resource = "arn:aws:iam::${local.account_id}:role/${local.prefix}-*"
       },
       {
-        # Só permite entregar roles do projeto ao serviço Lambda.
-        Sid      = "PassProjectRolesToLambda"
+        # Anexar policy gerenciada só é permitido para a policy de logs do API Gateway.
+        Sid      = "AttachAPIGatewayLogsPolicy"
+        Effect   = "Allow"
+        Action   = ["iam:AttachRolePolicy", "iam:DetachRolePolicy"]
+        Resource = "arn:aws:iam::${local.account_id}:role/${local.prefix}-*"
+        Condition = {
+          ArnEquals = {
+            "iam:PolicyARN" = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+          }
+        }
+      },
+      {
+        # Só permite entregar roles do projeto à Lambda (execução) e ao API Gateway (logs).
+        Sid      = "PassProjectRoles"
         Effect   = "Allow"
         Action   = ["iam:PassRole"]
         Resource = "arn:aws:iam::${local.account_id}:role/${local.prefix}-*"
         Condition = {
           StringEquals = {
-            "iam:PassedToService" = "lambda.amazonaws.com"
+            "iam:PassedToService" = ["lambda.amazonaws.com", "apigateway.amazonaws.com"]
           }
         }
       },

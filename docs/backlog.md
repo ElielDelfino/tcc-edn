@@ -80,12 +80,13 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | ID | User Story | SP | Prioridade | Responsável | Sprint |
 |----|-----------|-----|-----------|-------------|--------|
 | 6.1 | Preparar demonstração funcional (curl/Postman → API → Lambda → DynamoDB → resposta) | 3 | Alta | M6 + M3 | 3 |
-| 6.2 | Configurar CloudWatch Logs para a Lambda | 2 | Média | M6 | 3 |
-| 6.3 | Criar CloudWatch Dashboard (métricas: invocations, errors, duration, DynamoDB read/write) | 3 | Média | M6 | 3 |
-| 6.4 | Configurar CloudWatch Alarm (ex: erros > 5 em 5 min) | 2 | Baixa | M6 | 3 |
+| 6.2 | Configurar CloudWatch Logs para a Lambda (concluída no módulo `lambda`) | 2 | Média | M2 | 3 |
+| 6.3 | Criar CloudWatch Dashboard (métricas: invocations, errors, duration, DynamoDB read/write) — guia em `infra/modules/observability/` | 3 | Média | M6 | 3 |
+| 6.4 | Configurar CloudWatch Alarm (ex: erros > 5 em 5 min) com notificação SNS — guia em `infra/modules/observability/` | 2 | Baixa | M6 | 3 |
 | 6.5 | Documentar estratégia de recuperação (re-aplicação via Terraform, restore DynamoDB) | 3 | Média | M6 + M4 | 3 |
 | 6.6 | Propor melhorias futuras (hospedar a página na AWS com S3 + CloudFront, analytics, rate limiting) | 2 | Média | M6 | 3 |
 | 6.7 | Criar página de demonstração (`frontend/`) consumindo a API: POST ao abrir, GET, log e teste de concorrência | 2 | Média | M2 | 3 |
+| 6.8 | Configurar access logs do API Gateway (sem dados pessoais) — guia em `infra/modules/observability/` | 2 | Média | M6 | 3 |
 
 ---
 
@@ -121,7 +122,7 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | 3. Backend (Lambda + API GW) | 6 | 15 | Sprint 2–3 |
 | 4. Dados e Segurança | 6 | 13 | Sprint 2–3 |
 | 5. Escalabilidade e Custos | 5 | 16 | Sprint 2–3 |
-| 6. Demo e Diferenciais | 7 | 17 | Sprint 3 |
+| 6. Demo e Diferenciais | 8 | 19 | Sprint 3 |
 | 7. Apresentação | 15 | 37 | Sprint 3–4 |
-| **Total** | **50** | **122** | |
+| **Total** | **51** | **124** | |
 #mexi no codigo

@@ -51,3 +51,10 @@ variable "lambda_timeout_s" {
   description = "Timeout da função Lambda (segundos)"
   default     = 5
 }
+
+variable "alarm_email" {
+  type        = string
+  description = "E-mail que recebe as notificações dos alarmes (SNS). Vazio = sem assinatura. Na pipeline vem do secret ALARM_EMAIL"
+  default     = ""
+  sensitive   = true # dado pessoal: não aparece nos logs do plan
+}

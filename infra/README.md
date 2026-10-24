@@ -17,7 +17,8 @@ infra/
 └── modules/
     ├── lambda/              # função Python 3.13 arm64, role de execução, log group
     ├── api-gateway/         # REST API regional, GET/POST /count, CORS, throttling
-    └── dynamodb/            # ⚠️ em branco — guia para o M4 no README do módulo
+    ├── dynamodb/            # ⚠️ em branco — guia para o M4 no README do módulo
+    └── observability/       # ⚠️ em branco — dashboard, alarme e access logs (guia para o M6)
 ```
 
 ## Módulos
@@ -27,6 +28,7 @@ infra/
 | [`lambda`](modules/lambda/README.md) | Função do contador, role com menor privilégio e log group com retenção | Pronto |
 | [`api-gateway`](modules/api-gateway/README.md) | Endpoint público `/count`, CORS e throttling no stage | Pronto |
 | [`dynamodb`](modules/dynamodb/README.md) | Tabela do contador | **Em branco (M4)** |
+| [`observability`](modules/observability/README.md) | Dashboard, alarme com SNS e access logs do API Gateway | **Em branco (M6)** |
 
 ## Nomes dos recursos
 
@@ -41,6 +43,8 @@ recursos que começam com `contador-acessos-` (veja `boot-strap/policy_project.t
 | Log group | `/aws/lambda/contador-acessos-dev-counter` |
 | REST API | `contador-acessos-dev-api` (stage `dev`) |
 | Tabela DynamoDB | `contador-acessos-dev-counter` (a ser criada pelo M4) |
+| Dashboard / alarme / tópico SNS | `contador-acessos-dev-dashboard`, `…-api-5xx`, `…-alarms` (M6) |
+| Access logs da API | `/aws/apigateway/contador-acessos-dev-access` (M6) |
 
 ## Variáveis
 
@@ -55,6 +59,7 @@ recursos que começam com `contador-acessos-` (veja `boot-strap/policy_project.t
 | `log_retention_days` | `14` | Retenção dos logs da Lambda |
 | `lambda_memory_mb` | `128` | Memória da Lambda |
 | `lambda_timeout_s` | `5` | Timeout da Lambda |
+| `alarm_email` | `""` | E-mail dos alarmes (sensível). Na pipeline vem do secret `ALARM_EMAIL` |
 
 ## Outputs
 

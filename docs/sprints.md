@@ -85,9 +85,10 @@
 | 5.4 | Documentar resiliência | M5 | To Do |
 | 5.5 | Plano de otimização de custos | M5 | To Do |
 | 6.1 | Preparar demo funcional | M6 + M3 | To Do |
-| 6.2 | CloudWatch Logs | M6 | To Do |
+| 6.2 | CloudWatch Logs | M2 | Done |
 | 6.3 | CloudWatch Dashboard | M6 | To Do |
 | 6.4 | CloudWatch Alarm | M6 | To Do |
+| 6.8 | Access logs do API Gateway | M6 | To Do |
 | 6.5 | Documentar recuperação | M6 + M4 | To Do |
 | 6.6 | Propor melhorias futuras | M6 | To Do |
 | 7.1 | Criar estrutura dos slides | M1 | To Do |

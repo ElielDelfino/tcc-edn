@@ -12,7 +12,7 @@ registrar e consultar acessos.
 | `aws_api_gateway_method` + `aws_api_gateway_integration` (GET, POST) | Integração `AWS_PROXY` com a Lambda |
 | `aws_api_gateway_method` + integração `MOCK` (OPTIONS) | Preflight CORS respondido pelo próprio API Gateway |
 | `aws_api_gateway_deployment` | Snapshot publicado. É recriado quando métodos ou integrações mudam |
-| `aws_api_gateway_stage` | Stage com o nome do ambiente (ex.: `dev`) |
+| `aws_api_gateway_stage` | Stage com o nome do ambiente (ex.: `dev`). Access logs ativados quando `access_log_group_arn` é informado |
 | `aws_api_gateway_method_settings` | Throttling aplicado a todos os métodos do stage |
 | `aws_lambda_permission` | Permite que **apenas** `/count` desta API invoque a função |
 
@@ -42,6 +42,9 @@ Um método não configurado (ex.: `DELETE`) recebe `403` do próprio API Gateway
 - **`triggers` no deployment.** Sem eles, alterações em métodos ou integrações não seriam
   publicadas no stage.
 - **`source_arn` restrito a `/*/*/count`.** Outras APIs ou rotas não conseguem invocar a função.
+- **Access logs opcionais e sem dados pessoais.** O log group e a role da conta vêm do módulo
+  `observability` (M6). Este módulo só ativa os logs no stage quando recebe o ARN. O formato JSON
+  é fixo e **não inclui IP nem user agent** (RNF-09).
 
 ## Variáveis
 
@@ -54,11 +57,13 @@ Um método não configurado (ex.: `DELETE`) recebe `403` do próprio API Gateway
 | `allowed_origin` | string | `"*"` | Origem permitida no preflight CORS |
 | `throttle_rate_limit` | number | `50` | Requisições/s em regime contínuo |
 | `throttle_burst_limit` | number | `100` | Pico momentâneo |
+| `access_log_group_arn` | string | `""` | Log group dos access logs. Vazio = logs desligados |
 
 ## Outputs
 
 | Nome | Descrição |
 |---|---|
 | `rest_api_id` | ID da REST API |
+| `rest_api_name` | Nome da REST API (dimensão `ApiName` das métricas) |
 | `invoke_url` | URL base do stage |
 | `count_endpoint` | URL completa de `/count` |
