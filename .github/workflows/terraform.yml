@@ -37,6 +37,8 @@ env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TERRAFORM_VERSION: "1.16.0"
+  # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+  TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
 defaults:
   run:
