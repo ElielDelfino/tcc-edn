@@ -84,7 +84,8 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | 6.3 | Criar CloudWatch Dashboard (métricas: invocations, errors, duration, DynamoDB read/write) | 3 | Média | M6 | 3 |
 | 6.4 | Configurar CloudWatch Alarm (ex: erros > 5 em 5 min) | 2 | Baixa | M6 | 3 |
 | 6.5 | Documentar estratégia de recuperação (re-aplicação via Terraform, restore DynamoDB) | 3 | Média | M6 + M4 | 3 |
-| 6.6 | Propor melhorias futuras (CI/CD, página front-end, analytics, rate limiting) | 2 | Média | M6 | 3 |
+| 6.6 | Propor melhorias futuras (hospedar a página na AWS com S3 + CloudFront, analytics, rate limiting) | 2 | Média | M6 | 3 |
+| 6.7 | Criar página de demonstração (`frontend/`) consumindo a API: POST ao abrir, GET, log e teste de concorrência | 2 | Média | M2 | 3 |
 
 ---
 
@@ -120,7 +121,7 @@ Organizado por Epics. Cada item tem prioridade, estimativa em Story Points (SP),
 | 3. Backend (Lambda + API GW) | 6 | 15 | Sprint 2–3 |
 | 4. Dados e Segurança | 6 | 13 | Sprint 2–3 |
 | 5. Escalabilidade e Custos | 5 | 16 | Sprint 2–3 |
-| 6. Demo e Diferenciais | 6 | 15 | Sprint 3 |
+| 6. Demo e Diferenciais | 7 | 17 | Sprint 3 |
 | 7. Apresentação | 15 | 37 | Sprint 3–4 |
-| **Total** | **49** | **120** | |
+| **Total** | **50** | **122** | |
 #mexi no codigo
