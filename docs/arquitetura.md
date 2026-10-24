@@ -1,5 +1,9 @@
 # Arquitetura da Solução
 
+![Diagrama de arquitetura do Contador de Acessos](arquitetura.svg)
+
+Fluxo passo a passo (animado): [fluxo-contador.gif](fluxo-contador.gif)
+
 ## Fluxo Principal
 
 ```
