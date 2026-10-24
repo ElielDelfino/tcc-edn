@@ -53,3 +53,5 @@ credentials
 CLAUDE.local.md
 .claude/
 escalabilidade.md
+# Biblioteca local de ícones para gerar diagramas (os ícones usados já ficam embutidos em docs/).
+icons/
