@@ -19,7 +19,7 @@ Baseado nos 10 pilares de avaliação do TCC. Marque cada item antes da apresent
 - [ ] Código da Lambda funcional e testado
 - [ ] API Gateway configurado e acessível
 - [ ] DynamoDB com schema correto e dados persistindo
-- [ ] CDK/IaC deployando toda a infraestrutura com sucesso
+- [ ] Terraform (IaC) provisionando toda a infraestrutura com sucesso
 - [ ] Repositório organizado (README, .gitignore, estrutura clara)
 
 ## 4. Segurança
@@ -48,7 +48,7 @@ Baseado nos 10 pilares de avaliação do TCC. Marque cada item antes da apresent
 
 ## 8. Recuperação
 - [ ] Point-in-Time Recovery habilitado no DynamoDB
-- [ ] Sabemos como recuperar a aplicação (re-deploy via CDK)
+- [ ] Sabemos como recuperar a aplicação (re-aplicação via Terraform)
 - [ ] Temos tempo estimado de recuperação
 - [ ] Estratégia de backup documentada
 

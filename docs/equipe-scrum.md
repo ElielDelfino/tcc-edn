@@ -20,10 +20,10 @@ Cada membro é **responsável principal** por sua área, mas todos devem conhece
 - **Tarefas técnicas:** Documentação de requisitos funcionais e não funcionais, mapeamento requisito ↔ serviço AWS
 - **Na apresentação:** Abre a apresentação, contextualiza o problema e a solução
 
-### Membro 2 — Arquitetura + Infraestrutura (CDK)
-- **Área:** Diagrama de arquitetura, CDK/IaC, deploy
+### Membro 2 — Arquitetura + Infraestrutura (Terraform)
+- **Área:** Diagrama de arquitetura, Terraform/IaC, deploy
 - **Slides:** 5 (Diagrama de Arquitetura)
-- **Tarefas técnicas:** Projeto CDK (stacks, constructs), diagrama de arquitetura, CI/CD se houver
+- **Tarefas técnicas:** Projeto Terraform (recursos, variáveis, outputs), diagrama de arquitetura, CI/CD se houver
 - **Na apresentação:** Explica o fluxo da arquitetura e como os serviços se conectam
 
 ### Membro 3 — Backend (Lambda + API Gateway)
@@ -64,7 +64,7 @@ Cada membro é **responsável principal** por sua área, mas todos devem conhece
 | Entrega | M1 (PO) | M2 (Arq) | M3 (Back) | M4 (Dados) | M5 (SM) | M6 (Demo) |
 |---------|---------|----------|-----------|------------|---------|-----------|
 | Requisitos | **R/A** | C | C | C | I | I |
-| Arquitetura CDK | C | **R/A** | C | C | I | I |
+| Arquitetura Terraform | C | **R/A** | C | C | I | I |
 | Lambda + API GW | I | C | **R/A** | C | I | I |
 | DynamoDB + IAM | I | C | C | **R/A** | I | I |
 | Análise de Custos | C | I | I | I | **R/A** | C |

@@ -11,7 +11,7 @@ Guia para montar o Scrum board no Notion baseado no backlog deste projeto.
 | **Título** | Title | Nome da tarefa |
 | **Status** | Select | `To Do`, `In Progress`, `In Review`, `Done`, `Blocked` |
 | **Sprint** | Select | `Sprint 1`, `Sprint 2`, `Sprint 3`, `Sprint 4` |
-| **Epic** | Select | `Planejamento`, `Arquitetura/CDK`, `Backend`, `Dados/Segurança`, `Custos/Escalabilidade`, `Demo/Diferenciais`, `Apresentação` |
+| **Epic** | Select | `Planejamento`, `Arquitetura/Terraform`, `Backend`, `Dados/Segurança`, `Custos/Escalabilidade`, `Demo/Diferenciais`, `Apresentação` |
 | **Responsável** | Person | Membros do grupo |
 | **Story Points** | Number | 1, 2, 3, 5, 8 |
 | **Prioridade** | Select | `Alta`, `Média`, `Baixa` |
