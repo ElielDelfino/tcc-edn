@@ -14,3 +14,8 @@ output "lambda_function_name" {
 output "lambda_log_group_name" {
   value = module.lambda.log_group_name
 }
+
+output "dynamodb_table_name" {
+  description = "Nome da tabela DynamoDB criada"
+  value       = module.dynamodb.table_name
+}

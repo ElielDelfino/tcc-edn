@@ -31,12 +31,11 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 
   # TODO(M4): substituir pelos outputs do módulo quando a tabela existir:
-  #   dynamodb_table_name = module.dynamodb.table_name
-  #   dynamodb_table_arn  = module.dynamodb.table_arn
-  # Enquanto vazios, a Lambda sobe sem permissão no DynamoDB e responde 500.
+  dynamodb_table_name = module.dynamodb.table_name
+  dynamodb_table_arn  = module.dynamodb.table_arn
   # Guia completo em modules/dynamodb/README.md.
-  dynamodb_table_name = ""
-  dynamodb_table_arn  = ""
+  # dynamodb_table_name = ""
+  # dynamodb_table_arn  = ""
 
   # TODO(M6): substituir pelo output do módulo quando os access logs existirem:
   #   apigw_access_log_group_arn = module.observability.access_log_group_arn
@@ -49,7 +48,8 @@ locals {
 # DynamoDB — responsabilidade do M4 (módulo ainda vazio)
 # -------------------------------------------------------
 module "dynamodb" {
-  source = "./modules/dynamodb"
+  source      = "./modules/dynamodb"
+  name_prefix = local.name_prefix
 }
 
 # -------------------------------------------------------
