@@ -157,6 +157,14 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
 
+      - name: Publicar o site no S3
+        run: |
+          API=$(terraform output -raw count_endpoint)
+          BUCKET=$(terraform output -raw frontend_bucket_name)
+          printf 'window.CONTADOR_API_URL = "%s";\n' "$API" > ../frontend/config.js
+          aws s3 sync ../frontend "s3://$BUCKET" --delete --exclude "*.md" --exclude "config.example.js"
+          echo "Site: $(terraform output -raw website_url)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resumo do deploy
         run: |
           {

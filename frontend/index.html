@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Em Breve — Contador de Acessos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f1720'/%3E%3Ctext x='16' y='23' font-family='Arial' font-size='18' font-weight='bold' text-anchor='middle' fill='%23ff9900'%3E%23%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #0f1720;
+      --surface: #17212d;
+      --border: #2c3b4e;
+      --text: #e8eef5;
+      --muted: #9fb0c3;
+      --accent: #ff9900;
+      --accent-text: #111;
+      --ok: #3fb950;
+      --err: #f85149;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+
+    .hero {
+      flex: 1;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      padding: 48px 16px 32px;
+      background: radial-gradient(ellipse at top, #1d2b3c 0%, var(--bg) 70%);
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0 auto 40px;
+      max-width: 34rem;
+      color: var(--muted);
+    }
+
+    .counter {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .count {
+      font-size: clamp(3.5rem, 14vw, 7rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .count-label { color: var(--muted); }
+
+    .actions { margin-top: 28px; }
+
+    button {
+      background: var(--accent);
+      color: var(--accent-text);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled),
+    button:focus-visible {
+      outline: 3px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: progress;
+    }
+
+    .status {
+      margin: 20px auto 0;
+      max-width: 34rem;
+      min-height: 1.5em;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .status:empty {
+      display: none;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: var(--ok);
+    }
+
+    .status.err {
+      color: var(--err);
+      border-color: var(--err);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      padding: 0 16px 32px;
+    }
+  </style>
+</head>
+<body>
+  <main class="hero">
+    <p class="eyebrow">Em breve</p>
+    <h1>Algo novo está chegando</h1>
+    <p class="lead">
+      Campanha de lançamento. Cada visita a esta página registra um acesso
+      no contador serverless e o total aparece abaixo.
+    </p>
+
+    <section class="counter" aria-labelledby="count-label">
+      <span id="count" class="count" aria-live="polite">—</span>
+      <span id="count-label" class="count-label">visitantes até agora</span>
+    </section>
+
+    <div class="actions">
+      <button id="btn-atualizar" type="button">Atualizar total</button>
+    </div>
+
+    <p id="status" class="status" role="alert" aria-live="assertive"></p>
+  </main>
+
+  <footer>TCC — Contador de Acessos Serverless na AWS</footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

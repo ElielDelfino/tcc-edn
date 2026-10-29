@@ -14,3 +14,11 @@ output "lambda_function_name" {
 output "lambda_log_group_name" {
   value = module.lambda.log_group_name
 }
+
+output "frontend_bucket_name" {
+  value = module.frontend.bucket_name
+}
+
+output "website_url" {
+  value = module.frontend.website_origin
+}
