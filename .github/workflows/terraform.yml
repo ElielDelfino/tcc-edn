@@ -49,7 +49,7 @@ jobs:
   # Backend — verificação do código da Lambda (sem AWS)
   # -------------------------------------------------------
   backend-check:
-    name: Backend (py_compile)
+    name: Backend (testes)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
 
@@ -59,10 +59,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13" # mesmo runtime da Lambda
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Instalar dependências de teste
+        working-directory: .
+        run: pip install -r backend/requirements-dev.txt
 
       - name: Compilar handler
         working-directory: .
         run: python -m py_compile backend/contador/handler.py
+
+      - name: Testes unitários (cobertura mínima de 80%)
+        working-directory: .
+        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
 
   # -------------------------------------------------------
   # Plan — roda em todo push na main e quando action=plan
@@ -71,6 +81,7 @@ jobs:
   plan:
     name: Init + Validate + Plan
     runs-on: ubuntu-latest
+    needs: backend-check
     if: github.event_name == 'push' || github.event.inputs.action == 'plan'
 
     steps:
