@@ -30,8 +30,8 @@ resultado.
 
 | Arquivo | Papel |
 |---|---|
-| `conftest.py` | Carregado pelo pytest antes dos testes. Define `TABLE_NAME`, `ALLOWED_ORIGIN`, região e credenciais **falsas** antes de importar o handler (ele lê `TABLE_NAME` no import e quebraria sem ela). Se algum teste esquecer o dublê, nada chega à conta real. |
-| `test_handler.py` | Os testes. A fixture `dynamo` coloca o dublê no lugar do cliente real durante cada teste e desfaz a troca no final. |
+| `conftest.py` | Carregado pelo pytest antes dos testes. Define `TABLE_NAME`, `ALLOWED_ORIGIN`, região e credenciais **falsas** antes de importar o handler (ele lê `TABLE_NAME` no import e quebraria sem ela). Limpa `AWS_PROFILE`, `AWS_SESSION_TOKEN`, `AWS_ENDPOINT_URL` e `COUNTER_ID` da máquina e desliga a busca de credenciais no IMDS, para o resultado não depender de quem roda. Se algum teste esquecer o dublê, nada chega à conta real. |
+| `test_handler.py` | Os testes. A fixture `dynamo` coloca o dublê no lugar do cliente real durante cada teste e desfaz a troca no final. O dublê é `MagicMock(spec=handler.dynamodb)`: só aceita métodos que o cliente boto3 de verdade tem. |
 
 ## O que cada teste verifica
 
@@ -41,11 +41,19 @@ resultado.
 | `test_get_devolve_o_total_com_leitura_consistente` | GET, banco tem 42 | Retorna 42 e lê com `ConsistentRead=True`, ou seja, sempre o valor mais atualizado |
 | `test_get_sem_item_devolve_zero` | GET com contador ainda inexistente | Retorna 0 em vez de quebrar |
 | `test_metodo_nao_permitido_devolve_405_sem_tocar_no_banco` (3 casos: DELETE, PUT, evento vazio) | Requisição inválida | Retorna 405 **e nem acessa o banco** |
-| `test_erro_do_dynamodb_devolve_500_sem_vazar_detalhes` | O banco lança um erro com a mensagem "segredo" | Retorna 500 com mensagem genérica, sem vazar detalhes internos ao usuário (segurança) |
+| `test_erro_do_dynamodb_devolve_500_sem_vazar_detalhes` | POST, o banco lança um erro com a mensagem "segredo" | Retorna 500 com mensagem genérica, sem vazar detalhes internos ao usuário (segurança) |
 | `test_resposta_traz_header_cors_da_origem_permitida` | Qualquer resposta | O header `Access-Control-Allow-Origin` vem certo. Sem ele, o navegador bloqueia o site de chamar a API |
+| `test_erro_do_dynamodb_devolve_500_em_post_e_get` (2 casos) | O banco falha no POST e no GET | 500 nos dois métodos, sem vazar a mensagem |
+| `test_resposta_malformada_do_dynamodb_devolve_500` | O item volta sem o atributo `count` | `KeyError` vira 500, não derruba a Lambda |
+| `test_log_de_erro_existe_e_nao_contem_dados_do_visitante` | Erro com IP e User-Agent no evento | O erro é logado (`caplog`), mas sem IP nem User-Agent (RNF-09) |
+| `test_usa_o_counter_id_configurado` | `COUNTER_ID` diferente do padrão | POST e GET usam o nome configurado, não `hits` fixo |
+| `test_sem_allowed_origin_o_padrao_e_asterisco` | Variável `ALLOWED_ORIGIN` ausente | CORS cai em `*` (carrega uma cópia do módulo, sem afetar os outros testes) |
+| `test_corpo_preserva_acentos_sem_escape_unicode` | Resposta 405 | `"Método não permitido"` sai legível, sem `\u00e9` |
+| `test_todas_as_respostas_trazem_cors_e_content_type` (3 casos) | Respostas 200, 405 e 500 | CORS e `Content-Type` em todas, não só no GET |
 
-Total: **8 testes**, porque o teste de método não permitido roda 3 vezes com
-`@pytest.mark.parametrize`.
+Total: **18 testes**, porque alguns rodam várias vezes com `@pytest.mark.parametrize` (método não
+permitido, erro em POST/GET, headers). Os 8 primeiros vieram no PR #5; os demais foram acrescentados
+na revisão, para matar mutações que sobreviviam.
 
 Cada teste segue o padrão **Arrange → Act → Assert**: preparar o cenário, executar o handler e
 conferir o resultado. Os testes conferem também **como o handler chamou o DynamoDB**, não só o
@@ -63,6 +71,12 @@ Um teste que sempre passa não protege nada. Por isso o handler foi quebrado de 
 | `ConsistentRead=True` trocado por `False` | 1 teste falhou |
 | `statusCode` fixo em 200 | 4 testes falharam |
 | Origem do CORS trocada por `*` | 1 teste falhou |
+| `ensure_ascii=False` trocado por `True` | 1 teste falhou |
+| `COUNTER_ID` fixo em `"hits"` (no POST ou no GET) | 1 teste falhou em cada |
+| Padrão de `ALLOWED_ORIGIN` trocado de `*` para outro valor | 1 teste falhou |
+| `logger.exception` removido, ou trocado por um log do `event` inteiro | 1 teste falhou em cada |
+| POST passando a chamar `get_item` também | 1 teste falhou |
+| `try/except` mantido só no POST | 5 testes falharam |
 
 A **cobertura de 100%** mostra que todas as linhas do handler foram executadas. A mutação mostra
 que os testes **percebem** quando alguma delas está errada.
@@ -82,7 +96,7 @@ pip install -r backend/requirements-dev.txt
 pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
 ```
 
-Resultado esperado: `8 passed` e `Required test coverage of 80% reached`. A pasta `.venv/` já
+Resultado esperado: `18 passed` e `Required test coverage of 80% reached`. A pasta `.venv/` já
 está no `.gitignore`.
 
 ## Na CI
@@ -96,18 +110,20 @@ falha e o `plan` e o `apply` **não rodam** (`needs: backend-check`).
 | Gatilho | Os testes rodam? |
 |---|---|
 | **Push na `main`** (inclui o merge de um PR na `main`) que altere `backend/**`, `infra/**` ou o próprio workflow | Sim, automaticamente |
+| **Pull Request para a `main`** (abrir ou atualizar) que altere esses mesmos caminhos | Sim |
 | **Execução manual** com `action` = `plan` ou `apply` | Sim, antes do plan/apply |
 | Execução manual com `plan-destroy` ou `destroy` | Não |
-| **Pull Request para a `main`** (abrir ou atualizar) que altere esses mesmos caminhos | Sim |
 | Push em outras branches (`dev`, `feat/...`) | **Não** |
 
 **Como rodar manualmente:** no GitHub, aba **Actions** → **Terraform CI/CD** → **Run workflow** →
-escolha a branch e `action` = `plan`.
+escolha a branch `main` e `action` = `plan`.
 
-> O job `plan` precisa das credenciais AWS (OIDC do bootstrap). Enquanto o bootstrap não for
-> aplicado, ele falha, mas o `backend-check` roda antes e mostra o resultado dos testes mesmo
-> assim. O mesmo vale nos Pull Requests: o `plan` aparece vermelho por falta de credenciais, mas
-> o `backend-check` mostra se os testes passaram.
+> **No Pull Request**, rodam `backend-check` (estes testes) e `infra-check` (`terraform fmt` e
+> `validate`, sem AWS). O `plan` **não roda em PR**: a role da AWS só aceita a `main` e o environment
+> `dev`, então um PR seria recusado sempre. Isso é de propósito e não deve ser "consertado"
+> afrouxando a role. O `plan` manual também só funciona escolhendo a `main`. No push da `main`, o
+> `plan` ainda depende do bootstrap (credenciais AWS) ser aplicado, mas o `backend-check` roda antes
+> e mostra o resultado dos testes mesmo assim.
 
 ## O que eles não testam
 

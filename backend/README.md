@@ -9,19 +9,21 @@ passando por um scanner de segurança. É a base da **task 3.5** do [backlog](..
 
 ## O que criar e onde
 
-Os arquivos abaixo **já existem vazios** no repositório. Você preenche os marcados com "escreve" e
-edita os marcados com "edita".
+Estado atual: o PR #5 (Miguel) já entregou os testes, o `requirements-dev.txt` e o job de testes na
+CI, e a CI passou a rodar também em Pull Request. **O que falta para a task 3.5** é o scanner:
+`.checkov.yaml` e o job `iac-scan`, mais as decisões do checkov (seção 7). As seções 1 a 6 continuam
+aqui para você entender o que foi feito e conseguir explicar para a banca.
 
 ```
 TCC-EdN-AWS/
 ├── backend/
 │   ├── contador/handler.py            # código da Lambda (já existe, não mexer)
 │   ├── tests/
-│   │   ├── conftest.py                # escreve (seção 4.1): variáveis de ambiente antes do import
-│   │   └── test_handler.py            # escreve (seções 4.2 a 4.4): os testes
-│   └── requirements-dev.txt           # escreve (seção 6.1): pytest, pytest-cov, boto3
-├── .checkov.yaml                      # escreve (seção 7.2): soft-fail + hard-fail-on do PITR
-├── .github/workflows/terraform.yml    # edita: jobs backend-check e iac-scan (seções 6.2 a 6.5)
+│   │   ├── conftest.py                # pronto (PR #5, seção 4.1): variáveis de ambiente antes do import
+│   │   └── test_handler.py            # pronto (PR #5, seções 4.2 a 4.6): os testes
+│   └── requirements-dev.txt           # pronto (PR #5, seção 6.1): pytest, pytest-cov, boto3
+├── .checkov.yaml                      # FALTA, você escreve (seção 7.2): soft-fail + hard-fail-on do PITR
+├── .github/workflows/terraform.yml    # FALTA, você edita: só o job iac-scan e o needs (seção 6.4)
 └── docs/decisao-criptografia-dynamodb.md   # NÃO é seu: o M4 escreve (task 4.4); o skip do checkov o cita
 ```
 
@@ -34,7 +36,7 @@ e confere o resultado. Ele precisa ser:
 
 | Propriedade | Significado | No nosso caso |
 |---|---|---|
-| Rápido | Milissegundos | 8 testes rodam em menos de 1 s |
+| Rápido | Milissegundos | os 18 testes rodam em menos de 1 s |
 | Isolado | Sem rede, banco, nuvem | Nunca chama a AWS de verdade |
 | Determinístico | Mesmo resultado sempre | O DynamoDB "responde" o que o teste mandar |
 
@@ -194,10 +196,34 @@ Os testes deste guia foram executados contra o handler real e depois **quebrados
 | `ADD #c :one` trocado por `SET #c :one` | 1 teste falhou |
 | `ConsistentRead=True` trocado por `False` | 1 teste falhou |
 | `"statusCode": status_code` trocado por `200` fixo | 4 testes falharam |
+| `ensure_ascii=False` trocado por `True` (acentos viram `\u00e9`) | 1 teste falhou (seção 4.6) |
+| `COUNTER_ID` fixo em `"hits"` no POST ou no GET | 1 teste falhou em cada caso (seção 4.6) |
+| `logger.exception` removido, ou trocado por um log do `event` inteiro (viola o RNF-09) | 1 teste falhou em cada caso (seção 4.6) |
 
 Faça o mesmo com a sua suíte: altere uma linha do handler, rode os testes e confirme que algum
 falha. Se nada falhar, o teste não protege aquela linha. **Cobertura de 80% mede linhas
 executadas, não qualidade**: a mutação mede se o teste percebe o erro.
+
+### 4.6 Testes acrescentados na revisão do PR #5
+
+A revisão do PR #5 rodou **mutações extras** e encontrou 7 que sobreviviam (os testes continuavam
+verdes com o handler quebrado). Os testes abaixo foram acrescentados para matá-las. Com eles a
+suíte tem **18 testes** e **100%** de cobertura:
+
+| Teste | O que passa a ser protegido |
+|---|---|
+| `test_erro_do_dynamodb_devolve_500_em_post_e_get` | O `try/except` cobre o GET também, não só o POST |
+| `test_resposta_malformada_do_dynamodb_devolve_500` | Item sem `count` (`KeyError`) vira 500, não derruba a Lambda |
+| `test_log_de_erro_existe_e_nao_contem_dados_do_visitante` | RNF-09: o erro é logado, mas sem IP nem User-Agent (usa `caplog`) |
+| `test_usa_o_counter_id_configurado` | O nome do contador vem da variável `COUNTER_ID`, no POST e no GET |
+| `test_sem_allowed_origin_o_padrao_e_asterisco` | Sem a variável, o CORS cai em `*` (carrega uma cópia do módulo, sem afetar os outros testes) |
+| `test_corpo_preserva_acentos_sem_escape_unicode` | `"Método não permitido"` sai legível, sem `\u00e9` |
+| `test_todas_as_respostas_trazem_cors_e_content_type` | CORS e `Content-Type` em 200, 405 e 500, não só no GET |
+
+Duas melhorias de robustez: o dublê agora é `MagicMock(spec=handler.dynamodb)`, que **recusa um
+método que o boto3 não tem** (um erro de digitação no handler não passa mais), e o `conftest.py`
+limpa `AWS_PROFILE`, `AWS_SESSION_TOKEN`, `AWS_ENDPOINT_URL` e `COUNTER_ID` da máquina e desliga a
+busca de credenciais no IMDS, para o resultado não depender de quem roda.
 
 ## 5. Rodando no seu computador
 
@@ -208,7 +234,7 @@ pip install -r backend/requirements-dev.txt
 pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
 ```
 
-Esperado: `8 passed` (ou o número de testes que você escrever) e `Required test coverage of 80% reached`.
+Esperado: `18 passed` (ou o número de testes que você escrever) e `Required test coverage of 80% reached`.
 Adicione `.venv/` ao `.gitignore`.
 
 ## 6. Colocando na CI
@@ -276,11 +302,15 @@ name: Terraform CI/CD          # nome do workflow, mostrado na aba Actions
 on:                            # GATILHOS: quando ele roda
   push:                        #   a cada push...
     branches: [main]           #   ...na main (no arquivo real é uma lista escrita em linhas)
+  pull_request:                #   e a cada Pull Request para a main (sem AWS, ver abaixo)
+    branches: [main]
   workflow_dispatch:           #   ou quando alguém clica "Run workflow" no GitHub
 
-permissions:                   # o que o token do GitHub pode fazer
-  contents: read               #   ler o código
-  id-token: write              #   pedir credencial temporária da AWS (OIDC)
+permissions:                   # o que o token do GitHub pode fazer, por padrão
+  contents: read               #   só ler o código (o id-token: write fica nos jobs com AWS)
+
+concurrency:                   # fila: um PR tem a sua, os demais usam a 'terraform-dev'
+  group: ...
 
 env:                           # variáveis de ambiente visíveis em todos os jobs
   TERRAFORM_VERSION: "1.16.0"
@@ -290,8 +320,9 @@ defaults:
     working-directory: infra   # todo 'run' começa em infra/, salvo se disser outro
 
 jobs:                          # JOBS: cada um roda numa máquina própria; por padrão, ao mesmo tempo
-  backend-check: { ... }       #   hoje: só compila o handler
-  plan:          { ... }       #   terraform init + validate + plan
+  backend-check: { ... }       #   pytest com cobertura >= 80% (push, PR e plan/apply manual)
+  infra-check:   { ... }       #   só em PR: terraform fmt + init sem backend + validate (sem AWS)
+  plan:          { ... }       #   terraform init + validate + plan (não roda em PR)
   apply:         { ... }       #   terraform apply (manual, só na main)
   plan-destroy:  { ... }
   destroy:       { ... }
@@ -306,13 +337,25 @@ terminar antes) e `steps` (a lista de passos). Cada passo faz **uma** de duas co
 Em `${{ ... }}` o GitHub troca a expressão por um valor na hora de rodar (ex.:
 `${{ secrets.AWS_ROLE_ARN }}` vira o segredo guardado no repositório).
 
-### 6.4 O que muda: hoje e depois, lado a lado
+**Por que o `plan` não roda em Pull Request?** O `plan` precisa assumir a role da AWS (OIDC). A
+role criada no `boot-strap/` só aceita a `main` e o environment `dev`; um PR chega com outra
+identidade e seria recusado **sempre**, mesmo depois do bootstrap. Por isso, em PR rodam só jobs que
+não usam a AWS: `backend-check` (testes), `infra-check` (`fmt` e `validate`) e, quando você
+criar, `iac-scan`. Não afrouxe a role para o PR passar: isso abriria a conta para código de PR.
+O `id-token: write` também ficou só nos jobs que falam com a AWS.
 
-Você faz **quatro mudanças** no mesmo arquivo. Em cada quadro, a esquerda é o que existe hoje e a
-direita é o que deve ficar, com um comentário em cada linha importante. Comentários em YAML são
-inofensivos: pode copiá-los ou apagá-los.
+### 6.4 O que já está pronto e o que falta no workflow
 
-**1. Quando roda (`on.push.paths`)**
+**Já feito** (não precisa refazer): o PR #5 deixou o `backend-check` instalando as dependências e
+rodando `pytest` com `--cov-fail-under=80`, e o `plan` e o `apply` já esperam por ele
+(`needs: backend-check`). Depois disso, a CI ganhou o gatilho `pull_request`, o job `infra-check`,
+a fila separada por PR e o `id-token: write` só nos jobs com AWS.
+
+**O que falta** são **três mudanças** no mesmo arquivo. Em cada quadro, a esquerda é o que existe
+hoje e a direita é o que deve ficar, com um comentário em cada linha importante. Comentários em
+YAML são inofensivos: pode copiá-los ou apagá-los.
+
+**1. Quando roda (`paths`, no `push` e no `pull_request`)**
 
 <table>
 <tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
@@ -321,6 +364,13 @@ inofensivos: pode copiá-los ou apagá-los.
 
 <pre>on:
   push:
+    branches:
+      - main
+    paths:
+      - "infra/**"
+      - "backend/**"
+      - ".github/workflows/terraform.yml"
+  pull_request:
     branches:
       - main
     paths:
@@ -344,84 +394,23 @@ on:
       - "backend/**"
       # NOVO: alterar a config do scanner também dispara a CI
       - ".checkov.yaml"
+      - ".github/workflows/terraform.yml"
+  # ao abrir ou atualizar um Pull Request para a main
+  pull_request:
+    branches:
+      - main
+    # mesma lista de caminhos: repita o NOVO aqui também
+    paths:
+      - "infra/**"
+      - "backend/**"
+      - ".checkov.yaml"
       - ".github/workflows/terraform.yml"</pre>
 
 </td>
 </tr>
 </table>
 
-**2. O job `backend-check`**
-
-<table>
-<tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
-<tr>
-<td valign="top">
-
-<pre>  backend-check:
-    name: Backend (py_compile)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13" # mesmo runtime da Lambda
-
-      - name: Compilar handler
-        working-directory: .
-        run: python -m py_compile backend/contador/handler.py</pre>
-
-</td>
-<td valign="top">
-
-<pre>  # id do job: o nome que outros jobs usam em 'needs'
-  backend-check:
-    # nome mostrado na aba Actions do GitHub
-    name: Backend (testes)
-    # máquina virtual Linux que o GitHub empresta
-    runs-on: ubuntu-latest
-    # só roda em push, ou quando escolhem plan/apply à mão
-    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
-
-    # lista de passos, executados em ordem (cada '- ' é um passo)
-    steps:
-      # baixa o código do repositório para a máquina
-      - uses: actions/checkout@v4
-
-      # instala o Python (uma 'action' pronta, com parâmetros em 'with')
-      - uses: actions/setup-python@v5
-        with:
-          # a mesma versão da Lambda
-          python-version: "3.13" # mesmo runtime da Lambda
-          # NOVO: guarda os pacotes baixados entre execuções (mais rápido)
-          cache: pip
-          # NOVO: o cache é refeito quando este arquivo muda
-          cache-dependency-path: backend/requirements-dev.txt
-
-      # NOVO: instala pytest, pytest-cov e boto3
-      - name: Instalar dependências de teste
-        # o arquivo usa 'infra' como padrão; aqui voltamos à raiz
-        working-directory: .
-        # comando de shell; o runner não tem o boto3
-        run: pip install -r backend/requirements-dev.txt
-
-      # confere se o handler tem erro de sintaxe
-      - name: Compilar handler
-        working-directory: .
-        run: python -m py_compile backend/contador/handler.py
-
-      # NOVO: roda os testes e falha se a cobertura ficar abaixo de 80%
-      - name: Testes unitários (cobertura mínima de 80%)
-        working-directory: .
-        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80</pre>
-
-</td>
-</tr>
-</table>
-
-**3. O job `iac-scan` (não existe hoje)**
+**2. O job `iac-scan` (não existe hoje)**
 
 <table>
 <tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
@@ -440,8 +429,8 @@ on:
     # nome mostrado na aba Actions
     name: Scanner IaC (checkov)
     runs-on: ubuntu-latest
-    # mesma regra do backend-check
-    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+    # mesma regra do backend-check: push, Pull Request e plan/apply manual
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
 
     steps:
       - uses: actions/checkout@v4
@@ -463,7 +452,10 @@ on:
 </tr>
 </table>
 
-**4. Quem espera quem (`needs`) em `plan` e `apply`**
+Ele não usa a AWS (o checkov só lê os arquivos `.tf`), então pode rodar em Pull Request sem
+credenciais e **não precisa de `permissions` próprias**.
+
+**3. Quem espera quem (`needs`) em `plan` e `apply`**
 
 <table>
 <tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
@@ -473,6 +465,7 @@ on:
 <pre>  plan:
     name: Init + Validate + Plan
     runs-on: ubuntu-latest
+    needs: backend-check
     if: github.event_name == 'push' || github.event.inputs.action == 'plan'
 
   apply:
@@ -516,43 +509,26 @@ conferido com `git apply --check` sobre o arquivo atual). Linhas com `+` entram,
        - "backend/**"
 +      - ".checkov.yaml"
        - ".github/workflows/terraform.yml"
+   # Roda a CI também nos Pull Requests para a main, mas sem AWS: só testes (backend-check) e
+   # validação do Terraform (infra-check). O plan não roda em PR porque a role da AWS só aceita
+@@ -17,6 +18,7 @@
+     paths:
+       - "infra/**"
+       - "backend/**"
++      - ".checkov.yaml"
+       - ".github/workflows/terraform.yml"
    workflow_dispatch:
      inputs:
-@@ -49,7 +50,7 @@
-   # Backend — verificação do código da Lambda (sem AWS)
+@@ -84,6 +86,27 @@
+         run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
+ 
    # -------------------------------------------------------
-   backend-check:
--    name: Backend (py_compile)
-+    name: Backend (testes)
-     runs-on: ubuntu-latest
-     if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
- 
-@@ -59,11 +60,42 @@
-       - uses: actions/setup-python@v5
-         with:
-           python-version: "3.13" # mesmo runtime da Lambda
-+          cache: pip
-+          cache-dependency-path: backend/requirements-dev.txt
-+
-+      - name: Instalar dependências de teste
-+        working-directory: .
-+        run: pip install -r backend/requirements-dev.txt
- 
-       - name: Compilar handler
-         working-directory: .
-         run: python -m py_compile backend/contador/handler.py
- 
-+      - name: Testes unitários (cobertura mínima de 80%)
-+        working-directory: .
-+        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
-+
-+  # -------------------------------------------------------
 +  # Scanner de IaC — lê o Terraform sem executá-lo (sem AWS)
 +  # -------------------------------------------------------
 +  iac-scan:
 +    name: Scanner IaC (checkov)
 +    runs-on: ubuntu-latest
-+    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
++    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
 +
 +    steps:
 +      - uses: actions/checkout@v4
@@ -567,26 +543,28 @@ conferido com `git apply --check` sobre o arquivo atual). Linhas com `+` entram,
 +          pip install checkov==3.1.47
 +          checkov --config-file .checkov.yaml
 +
++  # -------------------------------------------------------
+   # Infra — validação do Terraform em Pull Request (sem AWS)
+   # fmt + init sem backend + validate: não precisa de credenciais nem lê o state
    # -------------------------------------------------------
-   # Plan — roda em todo push na main e quando action=plan
-   # Valida o código e mostra o que será alterado
-@@ -71,6 +103,7 @@
+@@ -118,7 +141,7 @@
    plan:
      name: Init + Validate + Plan
      runs-on: ubuntu-latest
+-    needs: backend-check
 +    needs: [backend-check, iac-scan]
      if: github.event_name == 'push' || github.event.inputs.action == 'plan'
- 
-     steps:
-@@ -108,7 +141,7 @@
+     permissions:
+       contents: read
+@@ -162,7 +185,7 @@
    apply:
      name: Plan + Apply
      runs-on: ubuntu-latest
 -    needs: backend-check
 +    needs: [backend-check, iac-scan]
      if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
-     environment: dev
- 
+     permissions:
+       contents: read
 ```
 
 Para usar: salve como `pipeline.patch` na raiz e rode `git apply pipeline.patch`. Depois confira
@@ -594,14 +572,15 @@ com `git diff` e rode o `actionlint`.
 
 ### 6.5 Conferindo o resultado
 
-- Os passos `Testes unitários` e `Checkov` só passam quando existirem `backend/tests/` com testes
-  de verdade e o `.checkov.yaml` (seção 7.2). **Enquanto `test_handler.py` estiver vazio, o
-  `pytest` termina com erro "no tests ran"** e o job fica vermelho. Faça o commit do workflow
-  junto com os testes.
+- O passo `Checkov` só passa quando existir o `.checkov.yaml` (seção 7.2). **Faça o commit do
+  workflow junto com o `.checkov.yaml`**, senão o job `iac-scan` fica vermelho e, com o `needs`,
+  trava o `plan` e o `apply`. Os testes já existem desde o PR #5.
 - `needs` em `plan` e `apply` faz um teste quebrado **impedir** o plan e o apply. É esse o
   objetivo: o time só altera a infraestrutura com o backend verde.
-- Mudou o `on.paths`? Lembre que o workflow só dispara em push na `main` com mudança nesses
-  caminhos. O `on:` já tem `pull_request` para a `main`, então o scanner também avisa no PR.
+- Mudou o `on.paths`? Lembre que o workflow só dispara com mudança nesses caminhos, tanto no push
+  quanto no Pull Request. Por isso o `.checkov.yaml` entra na lista nos dois.
+- **No Pull Request**, o esperado é: `backend-check`, `infra-check` e `iac-scan` verdes. O `plan` nem
+  aparece (é de propósito: ver seção 6.3). No push da `main`, o `plan` ainda depende do bootstrap.
 
 ## 7. Scanner de IaC (checkov)
 
@@ -648,11 +627,11 @@ Testado: com PITR ligado o checkov sai com código `0`. Removendo o bloco `point
 da tabela, sai com `1`. Com o tempo, você move checks de "aviso" para `hard-fail-on`.
 
 O job `iac-scan` (sem credenciais AWS, por isso independente do `plan`) está comentado
-linha a linha na seção 6.4, quadro 3. Ele lê este `.checkov.yaml` com `--config-file`.
+linha a linha na seção 6.4, quadro 2. Ele lê este `.checkov.yaml` com `--config-file`.
 
 > O workflow roda em push na `main` e em Pull Request para a `main`, com mudanças em `infra/`,
-> `backend/` ou no próprio workflow. Sem credenciais AWS o `plan` falha, mas o scanner e os testes
-> mostram o resultado antes.
+> `backend/`, `.checkov.yaml` ou no próprio workflow. O scanner e os testes rodam no PR sem AWS;
+> o `plan` fica de fora do PR porque a role da AWS só aceita a `main`.
 
 ### 7.3 Aceitar uma falha com justificativa (skip)
 
@@ -719,13 +698,13 @@ regra, avaliamos o risco e registramos por que a aceitamos*.
 
 ## 9. Checklist da task 3.5
 
-- [ ] `backend/requirements-dev.txt` com as versões fixas
-- [ ] `backend/tests/conftest.py` e `test_handler.py` com os 6 casos da seção 4
-- [ ] Cobertura ≥ 80% localmente
-- [ ] Mutação feita em pelo menos 2 linhas do handler, com testes falhando
-- [ ] Job `backend-check` com `pytest` e `needs: backend-check` no `plan`
+- [x] `backend/requirements-dev.txt` com as versões fixas (PR #5)
+- [x] `backend/tests/conftest.py` e `test_handler.py` com os casos da seção 4 (PR #5 + seção 4.6)
+- [x] Cobertura ≥ 80% localmente (100%)
+- [x] Mutação feita em linhas do handler, com testes falhando
+- [x] Job `backend-check` com `pytest` e `needs: backend-check` no `plan` (PR #5)
 - [ ] `.checkov.yaml` e job `iac-scan` (avisando, com `hard-fail-on` do PITR)
-- [ ] `.venv/` no `.gitignore`
+- [x] `.venv/` no `.gitignore`
 - [ ] Teste de concorrência: **fora do escopo por enquanto** (será definido depois)
 - [ ] Testes `.tftest.hcl`: **fora do escopo**
 
