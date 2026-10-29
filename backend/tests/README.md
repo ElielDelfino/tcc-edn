@@ -98,15 +98,16 @@ falha e o `plan` e o `apply` **não rodam** (`needs: backend-check`).
 | **Push na `main`** (inclui o merge de um PR na `main`) que altere `backend/**`, `infra/**` ou o próprio workflow | Sim, automaticamente |
 | **Execução manual** com `action` = `plan` ou `apply` | Sim, antes do plan/apply |
 | Execução manual com `plan-destroy` ou `destroy` | Não |
-| Push em outras branches (`dev`, `feat/...`) ou abertura de Pull Request | **Não** (o workflow não tem gatilho de `pull_request`) |
+| **Pull Request para a `main`** (abrir ou atualizar) que altere esses mesmos caminhos | Sim |
+| Push em outras branches (`dev`, `feat/...`) | **Não** |
 
 **Como rodar manualmente:** no GitHub, aba **Actions** → **Terraform CI/CD** → **Run workflow** →
 escolha a branch e `action` = `plan`.
 
 > O job `plan` precisa das credenciais AWS (OIDC do bootstrap). Enquanto o bootstrap não for
 > aplicado, ele falha, mas o `backend-check` roda antes e mostra o resultado dos testes mesmo
-> assim. Para rodar os testes também em Pull Requests, seria preciso adicionar `pull_request` ao
-> `on:` do workflow (combinar com o M2 antes).
+> assim. O mesmo vale nos Pull Requests: o `plan` aparece vermelho por falta de credenciais, mas
+> o `backend-check` mostra se os testes passaram.
 
 ## O que eles não testam
 

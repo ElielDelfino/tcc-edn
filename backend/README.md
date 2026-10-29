@@ -601,8 +601,7 @@ com `git diff` e rode o `actionlint`.
 - `needs` em `plan` e `apply` faz um teste quebrado **impedir** o plan e o apply. É esse o
   objetivo: o time só altera a infraestrutura com o backend verde.
 - Mudou o `on.paths`? Lembre que o workflow só dispara em push na `main` com mudança nesses
-  caminhos. Para o scanner avisar já no Pull Request, o `on:` precisaria de `pull_request`.
-  Combine com o M2.
+  caminhos. O `on:` já tem `pull_request` para a `main`, então o scanner também avisa no PR.
 
 ## 7. Scanner de IaC (checkov)
 
@@ -651,8 +650,9 @@ da tabela, sai com `1`. Com o tempo, você move checks de "aviso" para `hard-fai
 O job `iac-scan` (sem credenciais AWS, por isso independente do `plan`) está comentado
 linha a linha na seção 6.4, quadro 3. Ele lê este `.checkov.yaml` com `--config-file`.
 
-> O workflow roda só em push na `main` com mudanças em `infra/` ou `backend/`. Para o scanner
-> avisar já no Pull Request, o `on:` precisaria de `pull_request`. Combine com o M2 antes.
+> O workflow roda em push na `main` e em Pull Request para a `main`, com mudanças em `infra/`,
+> `backend/` ou no próprio workflow. Sem credenciais AWS o `plan` falha, mas o scanner e os testes
+> mostram o resultado antes.
 
 ### 7.3 Aceitar uma falha com justificativa (skip)
 
