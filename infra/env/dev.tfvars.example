@@ -11,7 +11,6 @@
 # environment  = "dev"
 
 # --- API Gateway ---
-# allowed_origin       = "*"
 # throttle_rate_limit  = 50
 # throttle_burst_limit = 100
 
