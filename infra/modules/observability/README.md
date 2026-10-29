@@ -207,7 +207,8 @@ aws cloudwatch set-alarm-state \
 ```
 
 Também dá para disparar o alarme "de verdade": enquanto a tabela do M4 não existir, toda chamada
-devolve `500`. Basta usar o **teste de concorrência** da página de demo (`frontend/`) com N ≥ 5.
+devolve `500`. Basta enviar 5 ou mais `POST` em sequência com `curl` (a página de demo hospedada no S3 será
+feita pelo M7, ver `docs/guia-frontend-s3.md`).
 
 ## 7. Checklist do PR
 

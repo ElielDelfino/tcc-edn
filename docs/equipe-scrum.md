@@ -1,4 +1,4 @@
-# Organização Scrum — Equipe de 6 Pessoas
+# Organização Scrum — Equipe de 7 Pessoas
 
 ## Papéis Scrum
 
@@ -6,7 +6,7 @@
 |-------|-----------------|----------|
 | **Product Owner (PO)** | Define prioridades, aceita entregas, garante que o produto atende os requisitos do TCC | 1 pessoa (pode acumular com outro papel técnico) |
 | **Scrum Master** | Facilita cerimônias, remove impedimentos, garante que o processo Scrum funciona | 1 pessoa (pode acumular com outro papel técnico) |
-| **Dev Team** | Executa as tarefas técnicas e de documentação | Todos os 6 participam |
+| **Dev Team** | Executa as tarefas técnicas e de documentação | Todos os 7 participam |
 
 > **Nota:** Em um grupo de 6 para TCC, o PO e o Scrum Master também executam tarefas técnicas. São papéis de coordenação, não dedicação exclusiva.
 
@@ -50,6 +50,12 @@ Cada membro é **responsável principal** por sua área, mas todos devem conhece
 - **Tarefas técnicas:** Preparar demo ao vivo, configurar monitoramento (CloudWatch), propor melhorias futuras (dashboard, alarmes, CI/CD)
 - **Na apresentação:** Faz a demo ao vivo e fecha com visão de futuro
 
+### Membro 7 — Frontend (S3)
+- **Área:** Página de demonstração hospedada no S3, consumindo a API do contador
+- **Slides:** apoia o 14 (Demonstração) com a página no ar
+- **Tarefas técnicas:** Criar a página estática, o módulo Terraform `infra/modules/frontend` (bucket do site), o deploy dos arquivos e o ajuste de CORS. O IAM da pipeline fica com o M2. Guia: [guia-frontend-s3.md](guia-frontend-s3.md)
+- **Na apresentação:** Mostra a página no ar e explica como ela chega ao navegador
+
 ## Cerimônias Scrum Sugeridas
 
 | Cerimônia | Frequência | Duração | O que fazer |
@@ -61,15 +67,16 @@ Cada membro é **responsável principal** por sua área, mas todos devem conhece
 
 ## Matriz RACI por Entrega
 
-| Entrega | M1 (PO) | M2 (Arq) | M3 (Back) | M4 (Dados) | M5 (SM) | M6 (Demo) |
-|---------|---------|----------|-----------|------------|---------|-----------|
-| Requisitos | **R/A** | C | C | C | I | I |
-| Arquitetura Terraform | C | **R/A** | C | C | I | I |
-| Lambda + API GW | I | C | **R/A** | C | I | I |
-| DynamoDB + IAM | I | C | C | **R/A** | I | I |
-| Análise de Custos | C | I | I | I | **R/A** | C |
-| Demo + Monitoramento | I | C | C | I | C | **R/A** |
-| Slides | **A** | R | R | R | R | R |
-| Apresentação | **A** | R | R | R | R | R |
+| Entrega | M1 (PO) | M2 (Arq) | M3 (Back) | M4 (Dados) | M5 (SM) | M6 (Demo) | M7 (Front) |
+|---------|---------|----------|-----------|------------|---------|-----------|------------|
+| Requisitos | **R/A** | C | C | C | I | I | I |
+| Arquitetura Terraform | C | **R/A** | C | C | I | I | C |
+| Lambda + API GW | I | C | **R/A** | C | I | I | C |
+| DynamoDB + IAM | I | C | C | **R/A** | I | I | I |
+| Análise de Custos | C | I | I | I | **R/A** | C | I |
+| Demo + Monitoramento | I | C | C | I | C | **R/A** | C |
+| Página no S3 | I | C (IAM) | C (CORS) | I | I | C | **R/A** |
+| Slides | **A** | R | R | R | R | R | R |
+| Apresentação | **A** | R | R | R | R | R | R |
 
 > **R** = Responsável (executa) · **A** = Aprovador · **C** = Consultado · **I** = Informado

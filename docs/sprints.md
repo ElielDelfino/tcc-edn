@@ -91,6 +91,8 @@
 | 6.8 | Access logs do API Gateway | M6 | To Do |
 | 6.5 | Documentar recuperação | M6 + M4 | To Do |
 | 6.6 | Propor melhorias futuras | M6 | To Do |
+| 6.7 | Criar a página de demonstração | M7 | To Do |
+| 6.9 | Hospedar a página no S3 | M7 | To Do |
 | 7.1 | Criar estrutura dos slides | M1 | To Do |
 
 ### Critérios de Aceitação da Sprint

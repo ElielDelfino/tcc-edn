@@ -25,8 +25,7 @@ Diagrama estático: [docs/arquitetura.svg](docs/arquitetura.svg)
 │       └── observability/       # ⚠️ em branco — dashboard, alarme e access logs (guia para o M6)
 ├── backend/
 │   └── contador/handler.py      # Código da Lambda (empacotado pelo Terraform)
-├── frontend/
-│   └── index.html               # Página "Em Breve" de demonstração (local, não implantada)
+├── frontend/                    # (a criar pelo M7) página estática hospedada no S3. Guia: docs/guia-frontend-s3.md
 └── docs/                        # Arquitetura, requisitos, backlog, handoffs...
 ```
 
@@ -86,8 +85,10 @@ curl -s "$URL"           # {"count": 1}
 > Enquanto o módulo `dynamodb` estiver em branco, a API responde `500`. Esse é o
 > comportamento esperado. Veja [infra/modules/dynamodb/README.md](infra/modules/dynamodb/README.md).
 
-Para ver o contador subindo no navegador (e testar CORS e concorrência), use a página de
-demonstração: [frontend/README.md](frontend/README.md).
+A página de demonstração será hospedada no S3 e está a cargo do M7. O passo a passo está em
+[docs/guia-frontend-s3.md](docs/guia-frontend-s3.md).
+
+Testes do backend, CI e scanner de IaC (M3): [backend/README.md](backend/README.md).
 
 Para rodar o Terraform localmente, veja **[infra/README.md](infra/README.md)**.
 
