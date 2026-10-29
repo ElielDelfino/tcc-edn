@@ -22,7 +22,7 @@ Diagrama estático: [docs/arquitetura.svg](docs/arquitetura.svg)
 │       ├── lambda/              # Função, role de execução e log group
 │       ├── api-gateway/         # REST API GET/POST /count, CORS e throttling
 │       ├── dynamodb/            # ⚠️ em branco — guia de implementação no README (M4)
-│       └── observability/       # ⚠️ em branco — dashboard, alarme e access logs (guia para o M6)
+│       └── observability/       # proposta IaC: dashboard, alarme SNS e access logs (revisão M6)
 ├── backend/
 │   └── contador/handler.py      # Código da Lambda (empacotado pelo Terraform)
 ├── frontend/                    # (a criar pelo M7) página estática hospedada no S3. Guia: docs/guia-frontend-s3.md
@@ -97,3 +97,32 @@ Para rodar o Terraform localmente, veja **[infra/README.md](infra/README.md)**.
 - [Arquitetura](docs/arquitetura.md) · [Handoffs](docs/handoffs.md)
 - [Backlog](docs/backlog.md) · [Sprints](docs/sprints.md) · [Definition of Done](docs/definition-of-done.md)
 - [Levantamento de requisitos](docs/Levantamento_Requisitos_Contador_de_Acessos_AWS.md)
+
+## Demo end-to-end — Sprint 3
+
+O roteiro manual de `curl POST → curl GET` (3 vezes), o executador automatizado com
+validação e evidências locais e o checklist de aceite estão em
+**[docs/demo-end-to-end.md](docs/demo-end-to-end.md)**.
+
+> A versão deste repositório com `infra/modules/dynamodb/` em branco **não permite
+> uma demonstração AWS completa**. Antes de rodar a demo na nuvem, o responsável
+> precisa concluir a integração DynamoDB/IAM e publicar o endpoint `/count`.
+
+
+### Teste local sem AWS (Sprint 3)
+
+Consulte [`docs/teste-local.md`](docs/teste-local.md) para iniciar uma API local com o handler real e DynamoDB simulado, testar POST/GET e gerar evidências de 3 ciclos.
+
+## CloudWatch — proposta Sprint 3 (linhas 31–33)
+
+O log group da Lambda já está definido pelo módulo `lambda`. Os recursos adicionais de
+monitoramento (access logs do API Gateway, Dashboard e alarme HTTP 5XX com SNS) estão
+preparados no módulo `observability`, **sem execução de Terraform na AWS**.
+
+Consulte [docs/monitoramento-sprint3.md](docs/monitoramento-sprint3.md) para decisões
+de métrica, validação, evidências e dependências com a equipe. O critério literal do Jira
+(`Lambda Errors > 5`) não corresponde ao comportamento atual do handler, que captura
+exceções e devolve HTTP 500; a proposta usa a métrica `5XXError` do API Gateway.
+
+**Antes do deploy:** a cópia fornecida de `.github/workflows/terraform.yml` está
+totalmente comentada, e o módulo DynamoDB ainda não foi implementado.

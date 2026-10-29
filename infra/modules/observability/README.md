@@ -1,7 +1,10 @@
 # Módulo: observability — guia de implementação (M6)
 
-> **Status:** módulo **em branco**. `main.tf`, `variables.tf` e `outputs.tf` existem, mas estão
-> vazios. Este guia descreve o que implementar para o monitoramento do contador.
+> **Status da proposta local (29/10/2026):** os três arquivos Terraform deste módulo
+> foram preenchidos para revisão, mas **não foram validados com `terraform validate`**
+> neste ambiente nem implantados na AWS. As instruções abaixo continuam como guia de
+> referência do M6; diferenças da proposta e evidências estão em
+> [`docs/monitoramento-sprint3.md`](../../../docs/monitoramento-sprint3.md).
 >
 > **Responsável:** M6 (Demonstração e Diferenciais). Tasks 6.3 (dashboard), 6.4 (alarme) e
 > 6.8 (access logs do API Gateway) do [backlog](../../../docs/backlog.md).

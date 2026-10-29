@@ -38,11 +38,8 @@ locals {
   dynamodb_table_name = ""
   dynamodb_table_arn  = ""
 
-  # TODO(M6): substituir pelo output do módulo quando os access logs existirem:
-  #   apigw_access_log_group_arn = module.observability.access_log_group_arn
-  # Enquanto vazio, o stage da API fica sem access logs.
-  # Guia completo em modules/observability/README.md.
-  apigw_access_log_group_arn = ""
+  # O módulo observability entrega o log group e a role da conta antes da ativação.
+  apigw_access_log_group_arn = module.observability.access_log_group_arn
 }
 
 # -------------------------------------------------------
@@ -98,4 +95,13 @@ module "api_gateway" {
 # -------------------------------------------------------
 module "observability" {
   source = "./modules/observability"
+
+  name_prefix          = local.name_prefix
+  aws_region           = var.aws_region
+  api_name             = module.api_gateway.rest_api_name
+  stage_name           = var.environment
+  lambda_function_name = module.lambda.function_name
+  dynamodb_table_name  = local.dynamodb_table_name
+  alarm_email          = var.alarm_email
+  log_retention_days   = var.log_retention_days
 }
