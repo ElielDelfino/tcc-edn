@@ -58,3 +58,5 @@ icons/
 TCC-EdN-AWS-pr4/
 # Material de treinamento (publicado como artefatos Claude, não faz parte do repositório).
 treinamento/
+# Gerado pela CI após o apply (contém a URL da API); só o config.example.js é versionado.
+frontend/config.js

@@ -3,15 +3,26 @@
 Este guia leva você de "nunca escrevi um teste" até a Lambda testada na CI e a infraestrutura
 passando por um scanner de segurança. É a base da **task 3.5** do [backlog](../docs/backlog.md).
 
-> **Versão interativa:** as mesmas lições, com quiz e cartões de revisão, estão em
-> [`treinamento/`](../treinamento/index.html) (trilha M3). Use o quiz para fixar, e este arquivo
-> como consulta.
+> **Versão interativa:** as mesmas lições, com quiz e cartões de revisão, estão no artefato Claude
+> do M3 (<https://claude.ai/artifact/SKWZqYv3ThgguKBN6qMhHS>; peça acesso ao M2). Use o quiz para
+> fixar, e este arquivo como consulta.
+
+## O que criar e onde
+
+Os arquivos abaixo **já existem vazios** no repositório. Você preenche os marcados com "escreve" e
+edita os marcados com "edita".
 
 ```
-backend/
-├── contador/handler.py      # Código da Lambda (já existe)
-├── tests/                   # (você cria) conftest.py e test_handler.py
-└── requirements-dev.txt     # (você cria) pytest, pytest-cov, boto3
+TCC-EdN-AWS/
+├── backend/
+│   ├── contador/handler.py            # código da Lambda (já existe, não mexer)
+│   ├── tests/
+│   │   ├── conftest.py                # escreve (seção 4.1): variáveis de ambiente antes do import
+│   │   └── test_handler.py            # escreve (seções 4.2 a 4.4): os testes
+│   └── requirements-dev.txt           # escreve (seção 6.1): pytest, pytest-cov, boto3
+├── .checkov.yaml                      # escreve (seção 7.2): soft-fail + hard-fail-on do PITR
+├── .github/workflows/terraform.yml    # edita: jobs backend-check e iac-scan (seções 6.2 e 7.2)
+└── docs/decisao-criptografia-dynamodb.md   # NÃO é seu: o M4 escreve (task 4.4); o skip do checkov o cita
 ```
 
 ---

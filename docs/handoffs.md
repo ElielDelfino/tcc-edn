@@ -24,7 +24,7 @@ histórico: `git show 3c38aad:frontend/index.html`.
   buckets `contador-acessos-*-frontend-*`. O M7 **não** escreve IAM. O bootstrap ainda não foi
   aplicado, então a mudança não gera custo.
 - **Guias novos:** [guia-frontend-s3.md](guia-frontend-s3.md) (M7), [`backend/README.md`](../backend/README.md)
-  (M3: testes, CI, checkov e CMK) e o treinamento interativo em [`treinamento/`](../treinamento/index.html).
+  (M3: testes, CI, checkov e CMK) e o treinamento interativo em dois artefatos Claude (M3: <https://claude.ai/artifact/SKWZqYv3ThgguKBN6qMhHS>; M7: <https://claude.ai/artifact/JnH5hJQ5csrgm8eqnv6zCj>).
 - **Backlog:** 6.7 reatribuída ao M7 (sem teste de concorrência por ora); nova 6.9 (hospedar no S3).
   Equipe de 7 pessoas.
 

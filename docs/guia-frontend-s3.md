@@ -4,8 +4,36 @@ Você vai criar a página do contador, hospedá-la no S3 e fazê-la conversar co
 guia diz o que fazer, em que ordem e por que cada peça existe. Tasks do [backlog](backlog.md):
 **6.7** (a página) e **6.9** (hospedagem no S3).
 
-> **Versão interativa:** as lições com quiz estão em [`treinamento/`](../treinamento/index.html)
-> (trilha M7). Este arquivo é a consulta.
+> **Versão interativa:** as lições com quiz estão no artefato Claude do M7
+> (<https://claude.ai/artifact/JnH5hJQ5csrgm8eqnv6zCj>; peça acesso ao M2). Este arquivo é a consulta.
+
+## O que criar e onde
+
+As pastas e os arquivos abaixo **já existem vazios** no repositório. Você preenche os marcados
+com "escreve" e edita os marcados com "edita".
+
+```
+TCC-EdN-AWS/
+├── frontend/                          # a página que vai para o S3
+│   ├── index.html                     # escreve (Passo 1)
+│   ├── app.js                         # escreve (Passo 1): chamadas POST/GET e mensagens de erro
+│   ├── config.example.js              # escreve (Passo 1): modelo com a URL de mentira
+│   ├── config.js                      # NÃO commitar: a CI gera (Passo 4); entra no .gitignore
+│   └── README.md                      # resumo desta pasta
+├── infra/
+│   ├── main.tf                        # edita: module "frontend" e allowed_origin (Passos 2 e 3)
+│   ├── output.tf                      # edita: frontend_bucket_name e website_url (Passo 2)
+│   └── modules/
+│       └── frontend/                  # o bucket do site
+│           ├── main.tf                # escreve (Passo 2)
+│           ├── variables.tf           # escreve (Passo 2)
+│           ├── outputs.tf             # escreve (Passo 2)
+│           └── README.md              # resumo do módulo
+├── .github/workflows/terraform.yml    # edita: passo de deploy com aws s3 sync (Passo 4)
+└── .gitignore                         # já tem frontend/config.js (nada a fazer)
+```
+
+O IAM da pipeline (`boot-strap/policy_project.tf`) **não é com você**: já está pronto.
 
 ## Como as peças se encaixam
 
@@ -80,7 +108,7 @@ async function chamar(metodo) {
 ```
 
 Crie também um `frontend/config.example.js` (`window.CONTADOR_API_URL = "COLE_A_URL_AQUI";`) e
-adicione `frontend/config.js` ao `.gitignore`.
+o `frontend/config.js` já está no `.gitignore`.
 
 ### Mensagens de erro sugeridas
 
