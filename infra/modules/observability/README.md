@@ -6,6 +6,32 @@
 > **Responsável:** M6 (Demonstração e Diferenciais). Tasks 6.3 (dashboard), 6.4 (alarme) e
 > 6.8 (access logs do API Gateway) do [backlog](../../../docs/backlog.md).
 
+> **Versão interativa:** as mesmas lições, com quiz e cartões de revisão, estão no artefato Claude do M6
+> (<https://claude.ai/artifact/BngFLmqDmkytPenpKCtBtz>; peça acesso ao M2). Este arquivo é a consulta.
+
+## O que criar e onde
+
+Os três arquivos do módulo **já existem vazios**. Você preenche os marcados com "escreve" e edita
+os marcados com "edita".
+
+```
+TCC-EdN-AWS/
+├── infra/
+│   ├── main.tf                        # edita: bloco module "observability" e o TODO(M6) em locals (seção 5)
+│   ├── output.tf                      # edita: output dashboard_name (seção 5)
+│   ├── variables.tf                   # já tem alarm_email e log_retention_days (não mexer)
+│   └── modules/
+│       └── observability/
+│           ├── main.tf                # escreve: log group, role, SNS, alarme, dashboard (seção 1)
+│           ├── variables.tf           # escreve: os 8 inputs (seção 3)
+│           ├── outputs.tf             # escreve: access_log_group_arn, dashboard_name, sns_topic_arn (seção 4)
+│           └── README.md              # este guia (no fim, troque pela documentação do módulo)
+├── .github/workflows/terraform.yml    # NÃO é seu: o M3 mexe aqui (testes e scanner). Leia a seção 7
+└── docs/arquitetura.md                # edita: registre o aviso 3 (aws_api_gateway_account vale para a conta inteira)
+```
+
+---
+
 ## Situação atual
 
 **O que já existe e não precisa ser feito:**
@@ -19,6 +45,11 @@
 | Variável do e-mail | `infra/variables.tf` → `alarm_email` | Na pipeline vem do secret opcional `ALARM_EMAIL` |
 
 **O que falta (você):** dashboard, alarme com notificação e access logs do API Gateway.
+
+> **IAM da pipeline não é com você.** As permissões para criar tudo isto (logs, role do API Gateway,
+> SNS, alarme e dashboard) estão em `boot-strap/policy_project.tf`, sob responsabilidade do M2, e já estão
+> prontas. Você **não edita** a pasta `boot-strap/`. Só precisa respeitar o prefixo `contador-acessos-*`
+> nos nomes (aviso 5). Se um `AccessDenied` aparecer na demo, avise o M2.
 
 ---
 
@@ -96,7 +127,8 @@ Depois troque os valores fixos pelas variáveis.
    substituída. Na conta do TCC isso não é problema, mas registre no documento de arquitetura.
 4. **A assinatura de e-mail fica pendente** até alguém clicar no link de confirmação que a AWS
    envia. Enquanto isso, o alarme não entrega notificações. Assinaturas pendentes **não são
-   apagadas** pelo `destroy`: elas expiram sozinhas em 3 dias.
+   apagadas** pelo `destroy`. Segundo a [documentação do SNS](https://docs.aws.amazon.com/sns/latest/dg/sns-email-notifications.html),
+   as não confirmadas são excluídas pelo próprio SNS após **48 horas**: confirme logo depois do apply.
 5. **Prefixo obrigatório.** A role da pipeline só tem permissão em recursos
    `contador-acessos-*` (dashboard, alarme, tópico, role) e `/aws/apigateway/contador-acessos-*`
    (log group). Outro nome resulta em `AccessDenied`.
@@ -164,29 +196,31 @@ output "dashboard_name" {
 }
 ```
 
-> **Já testado.** Uma implementação mínima seguindo este guia foi validada com `terraform plan`
-> offline, sem ciclo de dependência. Com `alarm_email` preenchido, o plan cria **26 recursos**
-> (os 18 atuais + 8 deste módulo), o stage passa a ter `access_log_settings` e o e-mail aparece
-> só como `(sensitive value)`. Sem e-mail, são 25 recursos e nenhuma assinatura.
+> **Já testado, sem AWS.** Uma implementação mínima seguindo este guia foi escrita numa cópia
+> e passou em `terraform fmt`, `terraform init -backend=false` e `terraform validate`, com o
+> módulo ligado na raiz (sem ciclo de dependência). O `checkov` rodou sobre ela (seção 7). O
+> `plan` **não** foi executado, porque exige o bootstrap aplicado na AWS, e isso só vai
+> acontecer no teste e na apresentação.
 
 ## 6. Validar
 
-### Localmente
+### Localmente (sem AWS e sem custo)
 
 ```bash
 cd infra
 terraform fmt -recursive
-terraform init -backend-config="bucket=<TF_STATE_BUCKET>"
+terraform init -backend=false     # não usa o bucket de state, então não precisa de credenciais
 terraform validate
-TF_VAR_alarm_email="seu-email@exemplo.com" terraform plan
 ```
 
-No `plan`, confira:
-
-- `module.observability.*`: log group, role, attachment, `aws_api_gateway_account`, tópico,
-  assinatura, alarme e dashboard **will be created**;
-- `module.api_gateway.aws_api_gateway_stage.this` **will be updated in-place**, com
-  `access_log_settings` (com a infra já aplicada).
+> **Não rode `terraform plan` nem `apply` por enquanto.** O `plan` precisa do bucket de state e
+> de credenciais, e o bootstrap ainda não foi aplicado (isso gera custo). Quando a AWS estiver
+> ligada, o `plan` deve mostrar:
+>
+> - `module.observability.*`: log group, role, attachment, `aws_api_gateway_account`, tópico,
+>   assinatura, alarme e dashboard **will be created**;
+> - `module.api_gateway.aws_api_gateway_stage.this` **will be updated in-place**, com
+>   `access_log_settings`.
 
 ### Na pipeline
 
@@ -210,7 +244,34 @@ Também dá para disparar o alarme "de verdade": enquanto a tabela do M4 não ex
 devolve `500`. Basta enviar 5 ou mais `POST` em sequência com `curl` (a página de demo hospedada no S3 será
 feita pelo M7, ver `docs/guia-frontend-s3.md`).
 
-## 7. Checklist do PR
+## 7. O que mudou na pipeline (testes, scanner e S3)
+
+O M3 vai acrescentar testes da Lambda e um scanner de IaC (checkov) ao workflow, e o M7 vai
+acrescentar o site no S3. Isso afeta o seu PR assim:
+
+1. **Seu código passa pelo checkov.** O job `iac-scan` lê o `infra/` inteiro, inclusive o seu
+   módulo. Ele **avisa e não bloqueia** (só o PITR do DynamoDB, `CKV_AWS_28`, bloqueia). Rodei o
+   checkov numa implementação de exemplo deste guia: **7 passam, 3 falham**:
+
+   | ID | O que cobra | Decisão sugerida |
+   |---|---|---|
+   | `CKV_AWS_158` | Log group criptografado com KMS | Aceitar: logs sem dado pessoal (RNF-09), mesma lógica da decisão de criptografia do DynamoDB |
+   | `CKV_AWS_338` | Retenção de logs ≥ 1 ano | Aceitar: 14 dias bastam para a demo e custam menos |
+   | `CKV_AWS_26` | Tópico SNS criptografado | Aceitar: o tópico só carrega o aviso do alarme |
+
+   Para aceitar, escreva dentro do resource, com o motivo:
+   `# checkov:skip=CKV_AWS_338: 14 dias bastam para a demonstração`. Combine as decisões com o M3 e o M2.
+2. **O `apply` agora depende dos testes e do scanner.** O job `apply` passa a exigir
+   `backend-check` e `iac-scan` verdes. Se um teste da Lambda quebrar, o seu alarme também não vai
+   ao ar. É proposital.
+3. **Nada muda nos seus recursos por causa do S3.** O site (módulo `frontend`, do M7) é outro
+   módulo com outro prefixo. O dashboard não precisa de widget para ele: monitorar o site no S3 está
+   fora do escopo das tasks 6.3 a 6.8. Os totais de recursos citados em planos antigos
+   (18 + 8) vão aumentar quando o módulo `frontend` entrar; use só o número **do seu módulo**.
+4. **O `terraform fmt -check -recursive` roda na raiz do repositório**, então também confere o
+   módulo do M7 e o seu. Rode `terraform fmt -recursive` antes do commit.
+
+## 8. Checklist do PR
 
 - [ ] Nomes com prefixo `contador-acessos-<env>-…` (e log group `/aws/apigateway/contador-acessos-…`)
 - [ ] Log group dos access logs com retenção
@@ -222,8 +283,8 @@ feita pelo M7, ver `docs/guia-frontend-s3.md`).
 - [ ] Dashboard com API Gateway, Lambda e DynamoDB (este último só se houver tabela)
 - [ ] Nenhum e-mail ou dado pessoal no código
 - [ ] Placeholder `TODO(M6)` trocado e output `dashboard_name` adicionado
-- [ ] `terraform fmt -check -recursive` e `terraform validate` sem erros
-- [ ] `plan` revisado: 8 recursos novos (7 sem e-mail) e stage com `access_log_settings`
+- [ ] `terraform fmt -check -recursive`, `init -backend=false` e `validate` sem erros (sem `plan`: o bootstrap não foi aplicado)
+- [ ] Falhas do checkov decididas: `checkov:skip` com motivo ou correção (seção 7)
 - [ ] Evidências para o slide 14: print do dashboard, alarme em `ALARM` e e-mail recebido
 - [ ] Este README atualizado: troque o guia pela documentação do módulo, no mesmo formato dos
       módulos `lambda` e `api-gateway`
