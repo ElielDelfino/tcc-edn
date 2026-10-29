@@ -21,7 +21,7 @@ TCC-EdN-AWS/
 │   │   └── test_handler.py            # escreve (seções 4.2 a 4.4): os testes
 │   └── requirements-dev.txt           # escreve (seção 6.1): pytest, pytest-cov, boto3
 ├── .checkov.yaml                      # escreve (seção 7.2): soft-fail + hard-fail-on do PITR
-├── .github/workflows/terraform.yml    # edita: jobs backend-check e iac-scan (seções 6.2 e 7.2)
+├── .github/workflows/terraform.yml    # edita: jobs backend-check e iac-scan (seções 6.2 a 6.5)
 └── docs/decisao-criptografia-dynamodb.md   # NÃO é seu: o M4 escreve (task 4.4); o skip do checkov o cita
 ```
 
@@ -224,14 +224,141 @@ pytest-cov==7.1.0
 boto3==1.43.121
 ```
 
-### 6.2 O job `backend-check`
+### 6.2 YAML em 5 minutos
 
-No `.github/workflows/terraform.yml` o job atual só compila o handler. Evolua-o (o
-`defaults.run.working-directory` do arquivo é `infra`, por isso `working-directory: .`):
+O arquivo `.github/workflows/terraform.yml` é **YAML**: um formato de texto para descrever dados em
+árvore, sem chaves nem ponto e vírgula. O GitHub lê esse texto e executa a pipeline. Há só
+cinco ideias:
+
+| Ideia | Como se escreve | Exemplo do nosso arquivo |
+|---|---|---|
+| **Chave e valor** | `chave: valor` (espaço depois dos dois pontos) | `runs-on: ubuntu-latest` |
+| **Aninhamento** | O **recuo** (espaços) mostra quem está dentro de quem | `steps:` está dentro de `backend-check:` |
+| **Lista** | Cada item começa com `- ` | `branches:` seguido de `- main` |
+| **Texto** | Com ou sem aspas; use aspas se tiver `:` ou `*` | `paths: - "infra/**"` |
+| **Comentário** | Começa com `#` e vai até o fim da linha | `# mesmo runtime da Lambda` |
 
 ```yaml
-  backend-check:
-    name: Backend (testes)
+# Isto é um comentário: o GitHub ignora.
+nome-do-job:                 # chave cujo valor é um bloco (tudo que está recuado abaixo)
+  runs-on: ubuntu-latest     # chave: valor simples
+  steps:                     # chave cujo valor é uma LISTA
+    - uses: actions/checkout@v4      # item 1 (um bloco com a chave 'uses')
+    - name: Rodar testes             # item 2: bloco com duas chaves, 'name' e 'run'
+      run: pytest                    #   'run' está alinhada com 'name': mesmo item
+    - name: Vários comandos
+      run: |                         # '|' = o texto abaixo é um bloco de várias linhas
+        pip install checkov
+        checkov -d infra
+```
+
+**Os três erros que mais acontecem:**
+
+1. **Recuo errado.** São sempre **espaços** (2 por nível), nunca TAB. Um item deslocado vira
+   outro item ou quebra o arquivo. Se `run:` não estiver alinhada com `name:`, ela deixa de
+   pertencer ao passo.
+2. **Dois pontos dentro do texto.** `name: Testes: unitários` quebra. Escreva
+   `name: "Testes: unitários"`.
+3. **Esquecer o `- `** no começo de um passo novo: sem ele, as chaves se misturam no passo anterior.
+
+> **Dica:** valide antes de fazer o commit. No seu computador:
+> `pip install actionlint-py && actionlint .github/workflows/terraform.yml`. Sem saída = sem erros.
+> O `actionlint` entende a estrutura do GitHub Actions, não só o YAML. Testei a versão nova desta
+> seção com ele: passou sem avisos.
+
+### 6.3 Como o workflow atual está organizado
+
+O arquivo tem sempre esta hierarquia: **workflow → jobs → passos (steps)**.
+
+```yaml
+name: Terraform CI/CD          # nome do workflow, mostrado na aba Actions
+
+on:                            # GATILHOS: quando ele roda
+  push:                        #   a cada push...
+    branches: [main]           #   ...na main (no arquivo real é uma lista escrita em linhas)
+  workflow_dispatch:           #   ou quando alguém clica "Run workflow" no GitHub
+
+permissions:                   # o que o token do GitHub pode fazer
+  contents: read               #   ler o código
+  id-token: write              #   pedir credencial temporária da AWS (OIDC)
+
+env:                           # variáveis de ambiente visíveis em todos os jobs
+  TERRAFORM_VERSION: "1.16.0"
+
+defaults:
+  run:
+    working-directory: infra   # todo 'run' começa em infra/, salvo se disser outro
+
+jobs:                          # JOBS: cada um roda numa máquina própria; por padrão, ao mesmo tempo
+  backend-check: { ... }       #   hoje: só compila o handler
+  plan:          { ... }       #   terraform init + validate + plan
+  apply:         { ... }       #   terraform apply (manual, só na main)
+  plan-destroy:  { ... }
+  destroy:       { ... }
+```
+
+Dentro de cada job: `runs-on` (a máquina), `if` (condição para rodar), `needs` (quem precisa
+terminar antes) e `steps` (a lista de passos). Cada passo faz **uma** de duas coisas:
+
+- `uses:` chama uma **action** pronta (ex.: `actions/checkout@v4` baixa o código);
+- `run:` executa **comandos de shell** (ex.: `pytest ...`).
+
+Em `${{ ... }}` o GitHub troca a expressão por um valor na hora de rodar (ex.:
+`${{ secrets.AWS_ROLE_ARN }}` vira o segredo guardado no repositório).
+
+### 6.4 O que muda: hoje e depois, lado a lado
+
+Você faz **quatro mudanças** no mesmo arquivo. Em cada quadro, a esquerda é o que existe hoje e a
+direita é o que deve ficar, com um comentário em cada linha importante. Comentários em YAML são
+inofensivos: pode copiá-los ou apagá-los.
+
+**1. Quando roda (`on.push.paths`)**
+
+<table>
+<tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
+<tr>
+<td valign="top">
+
+<pre>on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/**"
+      - "backend/**"
+      - ".github/workflows/terraform.yml"</pre>
+
+</td>
+<td valign="top">
+
+<pre># QUANDO o workflow roda
+on:
+  # ao enviar commits...
+  push:
+    branches:
+      # ...para a main
+      - main
+    # e só se mudou um destes caminhos
+    paths:
+      - "infra/**"
+      - "backend/**"
+      # NOVO: alterar a config do scanner também dispara a CI
+      - ".checkov.yaml"
+      - ".github/workflows/terraform.yml"</pre>
+
+</td>
+</tr>
+</table>
+
+**2. O job `backend-check`**
+
+<table>
+<tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
+<tr>
+<td valign="top">
+
+<pre>  backend-check:
+    name: Backend (py_compile)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
 
@@ -241,24 +368,241 @@ No `.github/workflows/terraform.yml` o job atual só compila o handler. Evolua-o
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13" # mesmo runtime da Lambda
+
+      - name: Compilar handler
+        working-directory: .
+        run: python -m py_compile backend/contador/handler.py</pre>
+
+</td>
+<td valign="top">
+
+<pre>  # id do job: o nome que outros jobs usam em 'needs'
+  backend-check:
+    # nome mostrado na aba Actions do GitHub
+    name: Backend (testes)
+    # máquina virtual Linux que o GitHub empresta
+    runs-on: ubuntu-latest
+    # só roda em push, ou quando escolhem plan/apply à mão
+    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+
+    # lista de passos, executados em ordem (cada '- ' é um passo)
+    steps:
+      # baixa o código do repositório para a máquina
+      - uses: actions/checkout@v4
+
+      # instala o Python (uma 'action' pronta, com parâmetros em 'with')
+      - uses: actions/setup-python@v5
+        with:
+          # a mesma versão da Lambda
+          python-version: "3.13" # mesmo runtime da Lambda
+          # NOVO: guarda os pacotes baixados entre execuções (mais rápido)
           cache: pip
+          # NOVO: o cache é refeito quando este arquivo muda
           cache-dependency-path: backend/requirements-dev.txt
 
+      # NOVO: instala pytest, pytest-cov e boto3
       - name: Instalar dependências de teste
+        # o arquivo usa 'infra' como padrão; aqui voltamos à raiz
         working-directory: .
+        # comando de shell; o runner não tem o boto3
         run: pip install -r backend/requirements-dev.txt
 
+      # confere se o handler tem erro de sintaxe
       - name: Compilar handler
         working-directory: .
         run: python -m py_compile backend/contador/handler.py
 
+      # NOVO: roda os testes e falha se a cobertura ficar abaixo de 80%
       - name: Testes unitários (cobertura mínima de 80%)
         working-directory: .
-        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
+        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80</pre>
+
+</td>
+</tr>
+</table>
+
+**3. O job `iac-scan` (não existe hoje)**
+
+<table>
+<tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
+<tr>
+<td valign="top">
+
+```text
+(não existe)
 ```
 
-Para que um teste falho **impeça o plan**, adicione `needs: backend-check` ao job `plan`.
-Exemplo testado: os 8 testes passam em Python 3.13.
+</td>
+<td valign="top">
+
+<pre>  # NOVO job, independente do backend-check: os dois rodam ao mesmo tempo
+  iac-scan:
+    # nome mostrado na aba Actions
+    name: Scanner IaC (checkov)
+    runs-on: ubuntu-latest
+    # mesma regra do backend-check
+    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Checkov
+        working-directory: .
+        # '|' = bloco de várias linhas, cada linha é um comando
+        run: |
+          # instala o checkov em versão fixa (reprodutível)
+          pip install checkov==3.1.47
+          # lê o .checkov.yaml: avisa, e só o PITR derruba o job
+          checkov --config-file .checkov.yaml</pre>
+
+</td>
+</tr>
+</table>
+
+**4. Quem espera quem (`needs`) em `plan` e `apply`**
+
+<table>
+<tr><th width="50%">Hoje</th><th width="50%">Depois (com comentários)</th></tr>
+<tr>
+<td valign="top">
+
+<pre>  plan:
+    name: Init + Validate + Plan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.action == 'plan'
+
+  apply:
+    name: Plan + Apply
+    runs-on: ubuntu-latest
+    needs: backend-check
+    if: github.event.inputs.action == 'apply' &amp;&amp; github.ref == 'refs/heads/main'</pre>
+
+</td>
+<td valign="top">
+
+<pre>  plan:
+    name: Init + Validate + Plan
+    runs-on: ubuntu-latest
+    # NOVO: este job só começa depois que os dois terminarem verdes.
+    # Se um teste ou o scanner (PITR) falhar, o job é pulado.
+    needs: [backend-check, iac-scan]
+    if: github.event_name == 'push' || github.event.inputs.action == 'plan'
+
+  apply:
+    name: Plan + Apply
+    runs-on: ubuntu-latest
+    # NOVO: este job só começa depois que os dois terminarem verdes.
+    # Se um teste ou o scanner (PITR) falhar, o job é pulado.
+    needs: [backend-check, iac-scan]
+    if: github.event.inputs.action == 'apply' &amp;&amp; github.ref == 'refs/heads/main'</pre>
+
+</td>
+</tr>
+</table>
+
+Para quem prefere aplicar tudo de uma vez, este é o **patch exato** (gerado com `diff -u` e
+conferido com `git apply --check` sobre o arquivo atual). Linhas com `+` entram, com `-` saem:
+
+```diff
+--- a/.github/workflows/terraform.yml
++++ b/.github/workflows/terraform.yml
+@@ -7,6 +7,7 @@
+     paths:
+       - "infra/**"
+       - "backend/**"
++      - ".checkov.yaml"
+       - ".github/workflows/terraform.yml"
+   workflow_dispatch:
+     inputs:
+@@ -49,7 +50,7 @@
+   # Backend — verificação do código da Lambda (sem AWS)
+   # -------------------------------------------------------
+   backend-check:
+-    name: Backend (py_compile)
++    name: Backend (testes)
+     runs-on: ubuntu-latest
+     if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+ 
+@@ -59,11 +60,42 @@
+       - uses: actions/setup-python@v5
+         with:
+           python-version: "3.13" # mesmo runtime da Lambda
++          cache: pip
++          cache-dependency-path: backend/requirements-dev.txt
++
++      - name: Instalar dependências de teste
++        working-directory: .
++        run: pip install -r backend/requirements-dev.txt
+ 
+       - name: Compilar handler
+         working-directory: .
+         run: python -m py_compile backend/contador/handler.py
+ 
++      - name: Testes unitários (cobertura mínima de 80%)
++        working-directory: .
++        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
++
++  # -------------------------------------------------------
++  # Scanner de IaC — lê o Terraform sem executá-lo (sem AWS)
++  # -------------------------------------------------------
++  iac-scan:
++    name: Scanner IaC (checkov)
++    runs-on: ubuntu-latest
++    if: github.event_name == 'push' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-python@v5
++        with:
++          python-version: "3.13"
++
++      - name: Checkov
++        working-directory: .
++        run: |
++          pip install checkov==3.1.47
++          checkov --config-file .checkov.yaml
++
+   # -------------------------------------------------------
+   # Plan — roda em todo push na main e quando action=plan
+   # Valida o código e mostra o que será alterado
+@@ -71,6 +103,7 @@
+   plan:
+     name: Init + Validate + Plan
+     runs-on: ubuntu-latest
++    needs: [backend-check, iac-scan]
+     if: github.event_name == 'push' || github.event.inputs.action == 'plan'
+ 
+     steps:
+@@ -108,7 +141,7 @@
+   apply:
+     name: Plan + Apply
+     runs-on: ubuntu-latest
+-    needs: backend-check
++    needs: [backend-check, iac-scan]
+     if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
+     environment: dev
+ 
+```
+
+Para usar: salve como `pipeline.patch` na raiz e rode `git apply pipeline.patch`. Depois confira
+com `git diff` e rode o `actionlint`.
+
+### 6.5 Conferindo o resultado
+
+- Os passos `Testes unitários` e `Checkov` só passam quando existirem `backend/tests/` com testes
+  de verdade e o `.checkov.yaml` (seção 7.2). **Enquanto `test_handler.py` estiver vazio, o
+  `pytest` termina com erro "no tests ran"** e o job fica vermelho. Faça o commit do workflow
+  junto com os testes.
+- `needs` em `plan` e `apply` faz um teste quebrado **impedir** o plan e o apply. É esse o
+  objetivo: o time só altera a infraestrutura com o backend verde.
+- Mudou o `on.paths`? Lembre que o workflow só dispara em push na `main` com mudança nesses
+  caminhos. Para o scanner avisar já no Pull Request, o `on:` precisaria de `pull_request`.
+  Combine com o M2.
 
 ## 7. Scanner de IaC (checkov)
 
@@ -304,23 +648,8 @@ hard-fail-on:            # estas, sim, derrubam o job
 Testado: com PITR ligado o checkov sai com código `0`. Removendo o bloco `point_in_time_recovery`
 da tabela, sai com `1`. Com o tempo, você move checks de "aviso" para `hard-fail-on`.
 
-E o job (sem credenciais AWS, por isso é independente do `plan`):
-
-```yaml
-  iac-scan:
-    name: Scanner IaC (checkov)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Checkov
-        working-directory: .
-        run: |
-          pip install checkov==3.1.47
-          checkov --config-file .checkov.yaml
-```
+O job `iac-scan` (sem credenciais AWS, por isso independente do `plan`) está comentado
+linha a linha na seção 6.4, quadro 3. Ele lê este `.checkov.yaml` com `--config-file`.
 
 > O workflow roda só em push na `main` com mudanças em `infra/` ou `backend/`. Para o scanner
 > avisar já no Pull Request, o `on:` precisaria de `pull_request`. Combine com o M2 antes.
