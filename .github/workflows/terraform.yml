@@ -1,291 +1,291 @@
-name: Terraform CI/CD
+# name: Terraform CI/CD
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - "infra/**"
-      - "backend/**"
-      - ".github/workflows/terraform.yml"
-  # Roda a CI também nos Pull Requests para a main, mas sem AWS: só testes (backend-check) e
-  # validação do Terraform (infra-check). O plan não roda em PR porque a role da AWS só aceita
-  # a main e o environment (ver boot-strap/role_project.tf).
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "infra/**"
-      - "backend/**"
-      - ".github/workflows/terraform.yml"
-  workflow_dispatch:
-    inputs:
-      action:
-        description: "Ação a executar"
-        required: true
-        default: "plan"
-        type: choice
-        options:
-          - plan
-          - apply
-          - plan-destroy
-          - destroy
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - "infra/**"
+#       - "backend/**"
+#       - ".github/workflows/terraform.yml"
+#   # Roda a CI também nos Pull Requests para a main, mas sem AWS: só testes (backend-check) e
+#   # validação do Terraform (infra-check). O plan não roda em PR porque a role da AWS só aceita
+#   # a main e o environment (ver boot-strap/role_project.tf).
+#   pull_request:
+#     branches:
+#       - main
+#     paths:
+#       - "infra/**"
+#       - "backend/**"
+#       - ".github/workflows/terraform.yml"
+#   workflow_dispatch:
+#     inputs:
+#       action:
+#         description: "Ação a executar"
+#         required: true
+#         default: "plan"
+#         type: choice
+#         options:
+#           - plan
+#           - apply
+#           - plan-destroy
+#           - destroy
 
-# Padrão do workflow: só leitura. O id-token: write (que troca o token OIDC do GitHub por
-# credenciais temporárias da AWS, role criada no boot-strap/) fica só nos jobs que usam a AWS.
-permissions:
-  contents: read
+# # Padrão do workflow: só leitura. O id-token: write (que troca o token OIDC do GitHub por
+# # credenciais temporárias da AWS, role criada no boot-strap/) fica só nos jobs que usam a AWS.
+# permissions:
+#   contents: read
 
-# Um único ambiente/state: nunca dois jobs mexendo na infra ao mesmo tempo.
-# Não cancela execuções em andamento — interromper um apply pode corromper o state.
-# Pull Requests não tocam no state, então cada um usa a sua própria fila e não
-# empurra para fora da fila um apply ou plan pendente.
-concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('terraform-pr-{0}', github.ref) || 'terraform-dev' }}
-  cancel-in-progress: false
+# # Um único ambiente/state: nunca dois jobs mexendo na infra ao mesmo tempo.
+# # Não cancela execuções em andamento — interromper um apply pode corromper o state.
+# # Pull Requests não tocam no state, então cada um usa a sua própria fila e não
+# # empurra para fora da fila um apply ou plan pendente.
+# concurrency:
+#   group: ${{ github.event_name == 'pull_request' && format('terraform-pr-{0}', github.ref) || 'terraform-dev' }}
+#   cancel-in-progress: false
 
-env:
-  TF_IN_AUTOMATION: "true"
-  TF_INPUT: "false"
-  TERRAFORM_VERSION: "1.16.0"
+# env:
+#   TF_IN_AUTOMATION: "true"
+#   TF_INPUT: "false"
+#   TERRAFORM_VERSION: "1.16.0"
 
-defaults:
-  run:
-    working-directory: infra
+# defaults:
+#   run:
+#     working-directory: infra
 
-jobs:
-  # -------------------------------------------------------
-  # Backend — verificação do código da Lambda (sem AWS)
-  # -------------------------------------------------------
-  backend-check:
-    name: Backend (testes)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+# jobs:
+#   # -------------------------------------------------------
+#   # Backend — verificação do código da Lambda (sem AWS)
+#   # -------------------------------------------------------
+#   backend-check:
+#     name: Backend (testes)
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13" # mesmo runtime da Lambda
-          cache: pip
-          cache-dependency-path: backend/requirements-dev.txt
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: "3.13" # mesmo runtime da Lambda
+#           cache: pip
+#           cache-dependency-path: backend/requirements-dev.txt
 
-      - name: Instalar dependências de teste
-        working-directory: .
-        run: pip install -r backend/requirements-dev.txt
+#       - name: Instalar dependências de teste
+#         working-directory: .
+#         run: pip install -r backend/requirements-dev.txt
 
-      - name: Compilar handler
-        working-directory: .
-        run: python -m py_compile backend/contador/handler.py
+#       - name: Compilar handler
+#         working-directory: .
+#         run: python -m py_compile backend/contador/handler.py
 
-      - name: Testes unitários (cobertura mínima de 80%)
-        working-directory: .
-        run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
+#       - name: Testes unitários (cobertura mínima de 80%)
+#         working-directory: .
+#         run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
 
-  # -------------------------------------------------------
-  # Infra — validação do Terraform em Pull Request (sem AWS)
-  # fmt + init sem backend + validate: não precisa de credenciais nem lê o state
-  # -------------------------------------------------------
-  infra-check:
-    name: Infra (fmt + validate)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+#   # -------------------------------------------------------
+#   # Infra — validação do Terraform em Pull Request (sem AWS)
+#   # fmt + init sem backend + validate: não precisa de credenciais nem lê o state
+#   # -------------------------------------------------------
+#   infra-check:
+#     name: Infra (fmt + validate)
+#     runs-on: ubuntu-latest
+#     if: github.event_name == 'pull_request'
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3.1.2
+#         with:
+#           terraform_version: ${{ env.TERRAFORM_VERSION }}
+#           terraform_wrapper: false
 
-      - name: Terraform Format (infra + boot-strap)
-        working-directory: .
-        run: terraform fmt -check -recursive
+#       - name: Terraform Format (infra + boot-strap)
+#         working-directory: .
+#         run: terraform fmt -check -recursive
 
-      - name: Terraform Init (sem backend)
-        run: terraform init -backend=false
+#       - name: Terraform Init (sem backend)
+#         run: terraform init -backend=false
 
-      - name: Terraform Validate
-        run: terraform validate
+#       - name: Terraform Validate
+#         run: terraform validate
 
-  # -------------------------------------------------------
-  # Plan — roda em todo push na main e quando action=plan
-  # Valida o código e mostra o que será alterado
-  # -------------------------------------------------------
-  plan:
-    name: Init + Validate + Plan
-    runs-on: ubuntu-latest
-    needs: backend-check
-    if: github.event_name == 'push' || github.event.inputs.action == 'plan'
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
-      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+#   # -------------------------------------------------------
+#   # Plan — roda em todo push na main e quando action=plan
+#   # Valida o código e mostra o que será alterado
+#   # -------------------------------------------------------
+#   plan:
+#     name: Init + Validate + Plan
+#     runs-on: ubuntu-latest
+#     needs: backend-check
+#     if: github.event_name == 'push' || github.event.inputs.action == 'plan'
+#     permissions:
+#       contents: read
+#       id-token: write
+#     env:
+#       # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+#       TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5.1.1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v5.1.1
+#         with:
+#           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3.1.2
+#         with:
+#           terraform_version: ${{ env.TERRAFORM_VERSION }}
+#           terraform_wrapper: false
 
-      - name: Terraform Format (infra + boot-strap)
-        working-directory: .
-        run: terraform fmt -check -recursive
+#       - name: Terraform Format (infra + boot-strap)
+#         working-directory: .
+#         run: terraform fmt -check -recursive
 
-      - name: Terraform Init
-        run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+#       - name: Terraform Init
+#         run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
 
-      - name: Terraform Validate
-        run: terraform validate
+#       - name: Terraform Validate
+#         run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform plan
+#       - name: Terraform Plan
+#         run: terraform plan
 
-  # -------------------------------------------------------
-  # Apply — manual (action=apply), só a partir da main,
-  # no GitHub Environment "dev" (aprovação opcional)
-  # -------------------------------------------------------
-  apply:
-    name: Plan + Apply
-    runs-on: ubuntu-latest
-    needs: backend-check
-    if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
-      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
-    environment: dev
+#   # -------------------------------------------------------
+#   # Apply — manual (action=apply), só a partir da main,
+#   # no GitHub Environment "dev" (aprovação opcional)
+#   # -------------------------------------------------------
+#   apply:
+#     name: Plan + Apply
+#     runs-on: ubuntu-latest
+#     needs: backend-check
+#     if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
+#     permissions:
+#       contents: read
+#       id-token: write
+#     env:
+#       # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+#       TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+#     environment: dev
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5.1.1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v5.1.1
+#         with:
+#           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3.1.2
+#         with:
+#           terraform_version: ${{ env.TERRAFORM_VERSION }}
+#           terraform_wrapper: false
 
-      - name: Terraform Init
-        run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+#       - name: Terraform Init
+#         run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
 
-      # Aplica exatamente o plano exibido no log, e não um novo cálculo.
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
+#       # Aplica exatamente o plano exibido no log, e não um novo cálculo.
+#       - name: Terraform Plan
+#         run: terraform plan -out=tfplan
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+#       - name: Terraform Apply
+#         run: terraform apply -auto-approve tfplan
 
-      - name: Publicar o site no S3
-        run: |
-          set -euo pipefail
-          API=$(terraform output -raw count_endpoint)
-          BUCKET=$(terraform output -raw frontend_bucket_name)
-          printf 'window.CONTADOR_API_URL = "%s";\n' "$API" > ../frontend/config.js
-          # no-cache: o config.js muda com a URL da API e não pode ficar preso no cache do navegador
-          aws s3 sync ../frontend "s3://$BUCKET" --delete --cache-control "no-cache" --exclude "*.md" --exclude "config.example.js"
-          echo "Site: $(terraform output -raw website_url)" >> "$GITHUB_STEP_SUMMARY"
+#       - name: Publicar o site no S3
+#         run: |
+#           set -euo pipefail
+#           API=$(terraform output -raw count_endpoint)
+#           BUCKET=$(terraform output -raw frontend_bucket_name)
+#           printf 'window.CONTADOR_API_URL = "%s";\n' "$API" > ../frontend/config.js
+#           # no-cache: o config.js muda com a URL da API e não pode ficar preso no cache do navegador
+#           aws s3 sync ../frontend "s3://$BUCKET" --delete --cache-control "no-cache" --exclude "*.md" --exclude "config.example.js"
+#           echo "Site: $(terraform output -raw website_url)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Resumo do deploy
-        run: |
-          {
-            echo "### Contador de Acessos — deploy concluído"
-            echo ""
-            echo "| Output | Valor |"
-            echo "|---|---|"
-            echo "| count_endpoint | \`$(terraform output -raw count_endpoint)\` |"
-            echo "| lambda_function_name | \`$(terraform output -raw lambda_function_name)\` |"
-            echo "| lambda_log_group_name | \`$(terraform output -raw lambda_log_group_name)\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
+#       - name: Resumo do deploy
+#         run: |
+#           {
+#             echo "### Contador de Acessos — deploy concluído"
+#             echo ""
+#             echo "| Output | Valor |"
+#             echo "|---|---|"
+#             echo "| count_endpoint | \`$(terraform output -raw count_endpoint)\` |"
+#             echo "| lambda_function_name | \`$(terraform output -raw lambda_function_name)\` |"
+#             echo "| lambda_log_group_name | \`$(terraform output -raw lambda_log_group_name)\` |"
+#           } >> "$GITHUB_STEP_SUMMARY"
 
-  # -------------------------------------------------------
-  # Plan Destroy — mostra o que será destruído sem executar
-  # -------------------------------------------------------
-  plan-destroy:
-    name: Plan Destroy
-    runs-on: ubuntu-latest
-    if: github.event.inputs.action == 'plan-destroy'
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
-      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+#   # -------------------------------------------------------
+#   # Plan Destroy — mostra o que será destruído sem executar
+#   # -------------------------------------------------------
+#   plan-destroy:
+#     name: Plan Destroy
+#     runs-on: ubuntu-latest
+#     if: github.event.inputs.action == 'plan-destroy'
+#     permissions:
+#       contents: read
+#       id-token: write
+#     env:
+#       # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+#       TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5.1.1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v5.1.1
+#         with:
+#           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3.1.2
+#         with:
+#           terraform_version: ${{ env.TERRAFORM_VERSION }}
+#           terraform_wrapper: false
 
-      - name: Terraform Init
-        run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+#       - name: Terraform Init
+#         run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
 
-      - name: Terraform Plan Destroy
-        run: terraform plan -destroy
+#       - name: Terraform Plan Destroy
+#         run: terraform plan -destroy
 
-  # -------------------------------------------------------
-  # Destroy — destrói toda a infra (manual, só a partir da main)
-  # -------------------------------------------------------
-  destroy:
-    name: Destroy
-    runs-on: ubuntu-latest
-    if: github.event.inputs.action == 'destroy' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
-      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
-    environment: dev
+#   # -------------------------------------------------------
+#   # Destroy — destrói toda a infra (manual, só a partir da main)
+#   # -------------------------------------------------------
+#   destroy:
+#     name: Destroy
+#     runs-on: ubuntu-latest
+#     if: github.event.inputs.action == 'destroy' && github.ref == 'refs/heads/main'
+#     permissions:
+#       contents: read
+#       id-token: write
+#     env:
+#       # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+#       TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+#     environment: dev
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5.1.1
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v5.1.1
+#         with:
+#           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v3.1.2
+#         with:
+#           terraform_version: ${{ env.TERRAFORM_VERSION }}
+#           terraform_wrapper: false
 
-      - name: Terraform Init
-        run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+#       - name: Terraform Init
+#         run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
 
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve
+#       - name: Terraform Destroy
+#         run: terraform destroy -auto-approve
