@@ -53,7 +53,6 @@ recursos que começam com `contador-acessos-` (veja `boot-strap/policy_project.t
 | `aws_region` | `us-east-1` | Região dos recursos |
 | `project_name` | `contador-acessos` | Primeira parte do nome dos recursos |
 | `environment` | `dev` | Ambiente e nome do stage da API |
-| `allowed_origin` | `*` | Origem permitida no CORS. Em produção, o domínio da página |
 | `throttle_rate_limit` | `50` | Requisições/s em regime contínuo |
 | `throttle_burst_limit` | `100` | Pico momentâneo de requisições |
 | `log_retention_days` | `14` | Retenção dos logs da Lambda |

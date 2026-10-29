@@ -53,6 +53,14 @@ module "dynamodb" {
 }
 
 # -------------------------------------------------------
+# Frontend S3 — site estático da página do contador (M7)
+# -------------------------------------------------------
+module "frontend" {
+  source      = "./modules/frontend"
+  name_prefix = local.name_prefix
+}
+
+# -------------------------------------------------------
 # Lambda — lógica do contador (backend/contador)
 # -------------------------------------------------------
 module "lambda" {
@@ -62,7 +70,7 @@ module "lambda" {
   source_dir         = "${path.root}/../backend/contador"
   table_name         = local.dynamodb_table_name
   table_arn          = local.dynamodb_table_arn
-  allowed_origin     = var.allowed_origin
+  allowed_origin     = module.frontend.website_origin
   memory_mb          = var.lambda_memory_mb
   timeout_s          = var.lambda_timeout_s
   log_retention_days = var.log_retention_days
@@ -78,7 +86,7 @@ module "api_gateway" {
   stage_name           = var.environment
   lambda_function_name = module.lambda.function_name
   lambda_invoke_arn    = module.lambda.invoke_arn
-  allowed_origin       = var.allowed_origin
+  allowed_origin       = module.frontend.website_origin
   throttle_rate_limit  = var.throttle_rate_limit
   throttle_burst_limit = var.throttle_burst_limit
   access_log_group_arn = local.apigw_access_log_group_arn

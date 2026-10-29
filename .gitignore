@@ -60,3 +60,6 @@ TCC-EdN-AWS-pr4/
 treinamento/
 # Gerado pela CI após o apply (contém a URL da API); só o config.example.js é versionado.
 frontend/config.js
+
+# Relatórios locais do problem-finder
+tasks/

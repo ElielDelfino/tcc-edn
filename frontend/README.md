@@ -12,6 +12,7 @@ frontend/
 ├── app.js               # (você escreve) chamadas POST/GET e mensagens de erro
 ├── config.example.js    # (você escreve) modelo: window.CONTADOR_API_URL = "COLE_A_URL_AQUI";
 ├── config.js            # NÃO existe no repositório: a CI gera após o apply (está no .gitignore)
+├── error.html           # pagina de erro do site S3
 └── README.md            # este arquivo
 
 infra/modules/frontend/  # (você escreve) bucket do site; veja o guia, Passo 2
@@ -21,7 +22,7 @@ infra/modules/frontend/  # (você escreve) bucket do site; veja o guia, Passo 2
 └── README.md
 ```
 
-Os arquivos já foram criados vazios. Também há dois arquivos existentes para **editar** (não criar):
+Os arquivos foram disponibilizados inicialmente vazios e implementados no M7. Também há dois arquivos existentes para **editar** (não criar):
 `infra/main.tf` e `infra/output.tf` (ligar o módulo) e `.github/workflows/terraform.yml` (deploy).
 
 ## Regras rápidas
