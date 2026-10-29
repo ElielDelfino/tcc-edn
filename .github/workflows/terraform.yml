@@ -8,8 +8,9 @@ on:
       - "infra/**"
       - "backend/**"
       - ".github/workflows/terraform.yml"
-  # Roda a CI também nos Pull Requests para a main. Sem credenciais AWS o plan falha,
-  # mas o backend-check (testes) mostra o resultado antes.
+  # Roda a CI também nos Pull Requests para a main, mas sem AWS: só testes (backend-check) e
+  # validação do Terraform (infra-check). O plan não roda em PR porque a role da AWS só aceita
+  # a main e o environment (ver boot-strap/role_project.tf).
   pull_request:
     branches:
       - main
@@ -30,24 +31,23 @@ on:
           - plan-destroy
           - destroy
 
-# id-token: write é o que permite trocar o token OIDC do GitHub por
-# credenciais temporárias da AWS (role criada no boot-strap/).
+# Padrão do workflow: só leitura. O id-token: write (que troca o token OIDC do GitHub por
+# credenciais temporárias da AWS, role criada no boot-strap/) fica só nos jobs que usam a AWS.
 permissions:
   contents: read
-  id-token: write
 
 # Um único ambiente/state: nunca dois jobs mexendo na infra ao mesmo tempo.
 # Não cancela execuções em andamento — interromper um apply pode corromper o state.
+# Pull Requests não tocam no state, então cada um usa a sua própria fila e não
+# empurra para fora da fila um apply ou plan pendente.
 concurrency:
-  group: terraform-dev
+  group: ${{ github.event_name == 'pull_request' && format('terraform-pr-{0}', github.ref) || 'terraform-dev' }}
   cancel-in-progress: false
 
 env:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
   TERRAFORM_VERSION: "1.16.0"
-  # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
-  TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
 defaults:
   run:
@@ -84,6 +84,34 @@ jobs:
         run: pytest backend/tests --cov=backend/contador --cov-report=term-missing --cov-fail-under=80
 
   # -------------------------------------------------------
+  # Infra — validação do Terraform em Pull Request (sem AWS)
+  # fmt + init sem backend + validate: não precisa de credenciais nem lê o state
+  # -------------------------------------------------------
+  infra-check:
+    name: Infra (fmt + validate)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Format (infra + boot-strap)
+        working-directory: .
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init (sem backend)
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+  # -------------------------------------------------------
   # Plan — roda em todo push na main e quando action=plan
   # Valida o código e mostra o que será alterado
   # -------------------------------------------------------
@@ -91,7 +119,13 @@ jobs:
     name: Init + Validate + Plan
     runs-on: ubuntu-latest
     needs: backend-check
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.action == 'plan'
+    if: github.event_name == 'push' || github.event.inputs.action == 'plan'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -130,6 +164,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend-check
     if: github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
     environment: dev
 
     steps:
@@ -176,6 +216,12 @@ jobs:
     name: Plan Destroy
     runs-on: ubuntu-latest
     if: github.event.inputs.action == 'plan-destroy'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -205,6 +251,12 @@ jobs:
     name: Destroy
     runs-on: ubuntu-latest
     if: github.event.inputs.action == 'destroy' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      # Opcional: e-mail dos alarmes do CloudWatch (módulo observability). Vazio = sem assinatura.
+      TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
     environment: dev
 
     steps:
