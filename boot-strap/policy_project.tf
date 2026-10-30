@@ -108,6 +108,18 @@ resource "aws_iam_role_policy" "terraform_state_and_infra" {
         Resource = "arn:aws:sns:${var.aws_region}:${local.account_id}:${local.prefix}-*"
       },
       {
+        # Bucket do site estático (módulo frontend, M7). O nome precisa conter "-frontend-"
+        # (ex.: contador-acessos-dev-frontend-<id da conta>). Cobre também o deploy dos
+        # arquivos (aws s3 sync) feito pela pipeline. O state fica em outro bucket e não é afetado.
+        Sid    = "S3FrontendBucket"
+        Effect = "Allow"
+        Action = ["s3:*"]
+        Resource = [
+          "arn:aws:s3:::${local.prefix}-*-frontend-*",
+          "arn:aws:s3:::${local.prefix}-*-frontend-*/*",
+        ]
+      },
+      {
         # DescribeLogGroups não suporta restrição por recurso.
         Sid      = "CloudWatchLogsDescribe"
         Effect   = "Allow"

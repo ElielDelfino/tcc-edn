@@ -53,6 +53,7 @@ fica restrito aos recursos com o prefixo do projeto (`resource_prefix`, padrão
 | `CloudWatchProjectAlarms` | `alarm:contador-acessos-*` |
 | `CloudWatchDescribe` | `DescribeAlarms` e `ListDashboards` em `*` (só leitura, sem restrição por recurso) |
 | `SNSProjectTopics` | Tópicos `contador-acessos-*` e suas assinaturas |
+| `S3FrontendBucket` | Buckets `contador-acessos-*-frontend-*` e seus objetos (site estático do M7 e deploy dos arquivos). O bucket de state não entra |
 | `IAMProjectRoles` | Roles `role/contador-acessos-*` e suas policies inline |
 | `AttachAPIGatewayLogsPolicy` | Anexar policy gerenciada **somente** `AmazonAPIGatewayPushToCloudWatchLogs` |
 | `PassProjectRoles` | `iam:PassRole` dessas roles **somente** para `lambda.amazonaws.com` e `apigateway.amazonaws.com` |

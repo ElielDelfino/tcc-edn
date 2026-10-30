@@ -16,12 +16,6 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "allowed_origin" {
-  type        = string
-  description = "Origem permitida no CORS. Em produção, usar o domínio da página"
-  default     = "*"
-}
-
 variable "throttle_rate_limit" {
   type        = number
   description = "Requisições por segundo em regime contínuo no stage da API"

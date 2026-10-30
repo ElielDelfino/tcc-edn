@@ -5,6 +5,48 @@ pendente e quem é impactado. Entradas mais recentes no topo.
 
 ---
 
+## 2026-10-28 — Frontend vai para o S3 (novo membro M7) + guias de testes
+
+**Responsável:** Eliel Delfino (M2)
+**Para:** **M7** (novo integrante, Frontend), **M3** (testes) e **M4** (revisão do PR #4)
+
+### Contexto
+
+Decidiu-se hospedar a página de demonstração no S3 e entregar a tarefa a um novo integrante
+(**M7**). A pasta `frontend/` saiu da `main` para ele refazer a página. A versão antiga continua no
+histórico: `git show 3c38aad:frontend/index.html`.
+
+### O que mudou
+
+- **Removido:** `frontend/` (página de demonstração e README). Substitui a entrada de 23/10
+  "Página de demonstração", cujo escopo "só local, melhoria futura" deixa de valer.
+- **IAM pronto (M2):** statement `S3FrontendBucket` em `boot-strap/policy_project.tf`, restrito a
+  buckets `contador-acessos-*-frontend-*`. O M7 **não** escreve IAM. O bootstrap ainda não foi
+  aplicado, então a mudança não gera custo.
+- **Guias novos:** [guia-frontend-s3.md](guia-frontend-s3.md) (M7), [`backend/README.md`](../backend/README.md)
+  (M3: testes, CI, checkov e CMK) e o treinamento interativo em três artefatos Claude (M3: <https://claude.ai/artifact/SKWZqYv3ThgguKBN6qMhHS>; M6: <https://claude.ai/artifact/BngFLmqDmkytPenpKCtBtz>; M7: <https://claude.ai/artifact/JnH5hJQ5csrgm8eqnv6zCj>).
+- **Backlog:** 6.7 reatribuída ao M7 (sem teste de concorrência por ora); nova 6.9 (hospedar no S3).
+  Equipe de 7 pessoas.
+
+### Decisões
+
+- Hospedagem: **S3 website (HTTP)**. CloudFront/HTTPS continua como melhoria futura (6.6).
+- `allowed_origin` passará a ser a origem do site; o `config.js` é gerado na CI para evitar ciclo
+  de dependência entre o módulo `frontend` e a API.
+- Criptografia do DynamoDB: chave de propriedade da AWS. O PR #4 documenta "AES256" mas configura
+  `enabled = true` (chave gerenciada pela AWS); ele volta para o M4 corrigir (task 4.4).
+- Fora do escopo por ora: teste de concorrência e testes `.tftest.hcl`.
+
+### Pendente
+
+- M7: página, módulo `infra/modules/frontend`, deploy e ajuste do CORS (tasks 6.7 e 6.9).
+- M3: testes unitários, `pytest` e checkov na CI (task 3.5).
+- M4: refazer o PR #4 e registrar `docs/decisao-criptografia-dynamodb.md`.
+- **Não validado:** nada foi testado na AWS (bootstrap não aplicado). Os exemplos de teste e de
+  módulo foram validados localmente (`pytest`, `terraform validate`, `checkov`).
+
+---
+
 ## 2026-10-23 — Troca de integrante no papel M6 + preparação da observabilidade
 
 **Responsável:** Eliel Delfino (M2)
@@ -58,7 +100,7 @@ US$ 0,625 por milhão de gravações, a metade do valor antigo).
 | 6.3 Dashboard | A fazer, pelo guia do módulo `observability` |
 | 6.4 Alarme (com SNS) | A fazer, pelo guia do módulo `observability` |
 | 6.8 Access logs do API Gateway (nova) | A fazer, pelo guia do módulo `observability` |
-| 6.1 Demo funcional | A fazer. A página `frontend/` já tem POST/GET, log e teste de concorrência |
+| 6.1 Demo funcional | A fazer. A página sai do S3 (M7, tasks 6.7 e 6.9); até lá, a demo usa `curl` |
 | 6.5 Estratégia de recuperação | A fazer (com o M4) |
 | 6.6 Melhorias futuras | A fazer |
 | Slides 13–16 (7.10–7.12) | A fazer |
@@ -119,7 +161,8 @@ Ela não é implantada pela pipeline nem faz parte do Terraform. Hospedá-la na 
 ### Impacto
 
 - **M6 (Demo):** usar a página na apresentação: o contador subindo na tela e o teste de
-  concorrência. Ver o [README](../frontend/README.md).
+  concorrência. O README da página saiu da `main` em 28/10 e está no histórico
+  (`git show 3c38aad:frontend/README.md`).
 - **M4:** depois que a tabela existir, a página é o jeito mais rápido de validar ponta a ponta.
 
 ---
