@@ -63,3 +63,6 @@ frontend/config.js
 
 # Relatórios locais do problem-finder
 tasks/
+
+# Evidências geradas localmente pela demonstração E2E (revisar antes de compartilhar).
+evidencias/

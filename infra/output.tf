@@ -22,3 +22,18 @@ output "frontend_bucket_name" {
 output "website_url" {
   value = module.frontend.website_origin
 }
+
+output "dashboard_name" {
+  value       = module.observability.dashboard_name
+  description = "Nome do painel CloudWatch"
+}
+
+output "alarm_name" {
+  value       = module.observability.alarm_name
+  description = "Nome do alarme de erros HTTP 5XX"
+}
+
+output "api_access_log_group_name" {
+  value       = module.observability.access_log_group_name
+  description = "Logs de acesso do API Gateway"
+}
