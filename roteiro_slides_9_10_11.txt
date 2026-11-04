@@ -1,0 +1,124 @@
+ROTEIRO DE APRESENTAÇÃO - MIGUEL PEREIRA
+TCC - Contador de Acessos Serverless
+Slides 9 (Resiliência), 10 (Segurança) e 11 (Custos)
+Tempo total: cerca de 3 minutos (1 minuto por slide)
+Dica: use o texto como base e fale com as suas palavras, sem ler.
+
+============================================================
+SLIDE 9 - RESILIÊNCIA (cerca de 1 minuto)
+============================================================
+
+O Roger mostrou como o sistema cresce. Agora a pergunta é: e se algo der
+errado? O nosso objetivo não é prometer que nada nunca vai falhar. É garantir
+que, quando algo falhar, o estrago seja pequeno e alguém fique sabendo na
+hora. Para isso, temos quatro proteções.
+
+A primeira: os dados não ficam num lugar só. O banco da AWS guarda cópias do
+contador em prédios diferentes. Se um prédio tiver problema, os outros
+continuam funcionando, sem ninguém precisar fazer nada.
+
+A segunda: o sistema nunca mente. Se der erro, ele avisa que deu erro, como o
+caixa eletrônico que diz "operação não realizada". Assim, o número que aparece
+na página é sempre verdadeiro.
+
+A terceira: alguém é avisado. Se acontecerem cinco erros em cinco minutos, um
+alarme manda um e-mail para o responsável. Ninguém precisa ficar vigiando a
+tela.
+
+E a quarta: os picos são controlados. Funciona como a catraca de um estádio:
+deixamos entrar até 50 acessos por segundo. Isso protege o sistema e,
+principalmente, protege a conta do cliente se um robô tentar abusar.
+
+============================================================
+SLIDE 10 - SEGURANÇA (cerca de 1 minuto)
+============================================================
+
+Na segurança, seguimos uma regra simples: cada parte do sistema só pode fazer
+exatamente o que precisa, nada além. É como dar a um funcionário a chave só da
+sala dele, e não do prédio inteiro.
+
+Na prática, o código que soma os acessos só tem permissão para somar e ler
+aquele contador. Mesmo que alguém invadisse essa parte, não chegaria a mais
+nada.
+
+O sistema é publicado por uma esteira automática que não guarda senha
+nenhuma. A cada uso, ela pede à AWS uma autorização temporária. Sem senha
+guardada, não há senha para vazar.
+
+Os dados ficam criptografados no banco, e a comunicação com a página usa
+HTTPS, aquele cadeado do navegador.
+
+Como a página é pública, ela tem o limite de acessos que acabei de mostrar e o
+alarme de erros.
+
+E por fim, a privacidade: não guardamos nenhum dado pessoal, nem IP, nem
+informação do aparelho. Contamos acessos, não pessoas. Isso deixa o cliente
+tranquilo em relação à LGPD.
+
+============================================================
+SLIDE 11 - CUSTOS (cerca de 1 minuto)
+============================================================
+
+Agora, a pergunta que todo dono de empresa faz: quanto isso custa?
+
+Com um milhão de acessos por mês, cerca de 4 dólares.
+
+Com poucos acessos, o custo é praticamente zero, por dois motivos. A AWS dá
+uma cota gratuita todo mês. E o sistema só cobra quando é usado: se ninguém
+acessar, não existe máquina ligada gerando conta.
+
+Mesmo sem nenhuma cota gratuita, o cenário de um milhão de acessos fica em
+torno de 8 dólares.
+
+E para onde vai esse dinheiro? Três quartos do custo que varia com o uso são a
+porta de entrada do sistema: 3,50 dólares a cada milhão de acessos. O maior
+custo fixo é o painel de monitoramento, 3 dólares por mês, e só se passarmos
+dos três painéis gratuitos.
+
+Esses valores vêm da calculadora oficial da AWS, e o link está no rodapé do
+slide.
+
+Resumindo: o custo acompanha o sucesso da campanha. Se ela não decolar, o
+cliente quase não paga. Se decolar, paga menos de um centavo de dólar a cada
+mil acessos.
+
+Agora o Charles vai mostrar tudo isso funcionando ao vivo.
+
+============================================================
+SE A BANCA PERGUNTAR
+============================================================
+
+"E se a AWS cair inteira naquela região?"
+A replicação protege contra a queda de um prédio, não de uma região inteira.
+Para isso existe a replicação entre regiões (DynamoDB Global Tables), que fica
+como evolução, com um custo maior.
+
+"50 acessos por segundo não é pouco?"
+A média com um milhão de acessos por mês é menos de 1 por segundo, então sobra
+muito espaço. O limite é proposital, para proteger o custo, e aumentar é mudar
+um número no código.
+
+"E se um robô ficar clicando sem parar?"
+O limite por segundo segura o volume. Bloquear por IP, com o AWS WAF, está nos
+próximos passos.
+
+"Por que 3 dólares sem cota gratuita, mesmo com só 100 acessos?"
+Quase todo esse valor é o painel de monitoramento, que é fixo. O uso em si
+custa centavos.
+
+"Quem consegue mexer nos dados?"
+Só a função do contador, e só para somar e ler. A esteira de publicação só
+gerencia os recursos do projeto.
+
+============================================================
+AJUSTES ANTES DE APRESENTAR
+============================================================
+
+1. Link do slide 11: o link no rodapé é do prnt.sc (um print de tela), não da
+   calculadora. Na AWS Pricing Calculator, abra a estimativa e use o botão
+   Share para gerar um link público (começa com calculator.aws). É esse link
+   que conta como diferencial no guia.
+
+2. "Alarme de orçamento" no slide 10: o slide 14 coloca o AWS Budgets como
+   próximo passo. Se o alarme de orçamento não foi criado de fato, tire
+   "e de orçamento" do slide 10, porque a banca pode pedir para ver.
